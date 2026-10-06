@@ -132,10 +132,20 @@ target_compile_definitions(LiveStreamMicroDAW PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_PLUGINHOST_VST3=1
-    JUCE_PLUGINHOST_AU=0
-    JUCE_WASAPI=1
-    JUCE_DIRECTSOUND=1
 )
+
+if(WIN32)
+    target_compile_definitions(LiveStreamMicroDAW PRIVATE
+        JUCE_PLUGINHOST_AU=0
+        JUCE_WASAPI=1
+        JUCE_DIRECTSOUND=1
+    )
+elseif(APPLE)
+    target_compile_definitions(LiveStreamMicroDAW PRIVATE
+        JUCE_PLUGINHOST_AU=1
+        JUCE_COREAUDIO=1
+    )
+endif()
 
 if(JUCE_ASIO_AVAILABLE)
     target_compile_definitions(LiveStreamMicroDAW PRIVATE JUCE_ASIO=1)

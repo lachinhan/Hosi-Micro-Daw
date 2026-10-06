@@ -3,21 +3,17 @@ name: Build macOS Universal Binary
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # Allows manual 1-click trigger from GitHub Actions web tab
+  workflow_dispatch:
 
 jobs:
   build-macos:
-    runs-on: macos-14 # Native Apple Silicon M1/M2 macOS Runner
+    runs-on: macos-14
     
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Install Build Tools
-        run: |
-          brew install ninja cmake
 
       - name: Configure CMake (Universal Binary: arm64 + x86_64)
         run: |
@@ -26,13 +22,12 @@ jobs:
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
 
-      - name: Build LiveStream Micro-DAW & OBS Plugin
+      - name: Build Standalone App & OBS Receiver Plugin
         run: |
-          ninja -C build_mac LiveStreamMicroDAW LiveStreamOBSReceiver
+          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver_All
 
       - name: Package macOS Release Bundle
         run: |
-          chmod +x tools/build_macos.sh
           RELEASE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
           mkdir -p "${RELEASE_DIR}/Plugins"
 
@@ -47,7 +42,7 @@ jobs:
             cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" "${RELEASE_DIR}/Plugins/"
           fi
 
-          # 3. Copy Docs & Scripts
+          # 3. Copy Docs
           cp "README.md" "${RELEASE_DIR}/"
           cp "README_EN.md" "${RELEASE_DIR}/"
           cp "HUONG_DAN_SU_DUNG.txt" "${RELEASE_DIR}/"
