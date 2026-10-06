@@ -1,0 +1,31 @@
+================================================================================
+          LIVESTREAM MICRO-DAW v2.0 - HƯỚNG DẪN SỬ DỤNG NHANH
+                    Phát triển bởi: La Chí Nhân (Hosi Prod)
+                 Website: https://lachinhan.xyz
+                 GitHub:  https://github.com/lachinhan/Hosi-Micro-Daw
+================================================================================
+
+1. GIỚI THIỆU TỔNG QUAN:
+   LiveStream Micro-DAW là phần mềm Host VST3 và định tuyến âm thanh độ trễ 0ms 
+   dành riêng cho Streamer, Ca sĩ hát live và Thu âm chuyên nghiệp trên Windows.
+
+2. TÍNH NĂNG NỔI BẬT:
+   - ⚡ Tự động dò Tone beat nhạc & giọng hát bằng công nghệ Chroma/YIN DSP.
+   - ⚡ Nút [⚡ AUTO]: Tự động nạp Tone đã chốt sang Auto-Tune Pro không cần thao tác tay.
+   - ⚡ Truyền âm thanh độ trễ 0ms sang OBS Studio qua LiveStream OBS Receiver (IPC).
+   - ⚡ Hỗ trợ nạp đầy đủ chuỗi VST3: Auto-Tune, FabFilter, Reverb, Delay,...
+   - ⚡ Tự động kiểm tra bản cập nhật mới nhất từ GitHub.
+
+3. HƯỚNG DẪN CÀI ĐẶT & KẾT NỐI OBS:
+   Bước 1: Chạy file cài đặt "LiveStream_Micro_DAW_Setup.exe" hoặc giải nén bản Portable.
+   Bước 2: Mở phần mềm "LiveStream Micro-DAW", chọn Soundcard / Driver ASIO hoặc Windows Audio.
+   Bước 3: Chèn các Plugin VST3 mong muốn vào khay hiệu ứng (Insert Effects).
+   Bước 4: Mở OBS Studio, thêm bộ lọc (Audio Filter) -> VST 2.x Plug-in -> Chọn "LiveStream OBS Receiver".
+   Bước 5: Bật nút [IPC OBS: BẬT] trên Micro-DAW. m thanh chuẩn phòng thu sẽ lập tức 
+           truyền thẳng sang livestream của bạn với độ trễ 0ms!
+
+4. HỖ TRỢ KỸ THUẬT & DỊCH VỤ CÀI ĐẶT:
+   - Hotline / Zalo: 0908.107.000 (La Chí Nhân)
+   - Trợ lý AI Hướng dẫn 24/7: https://byvn.net/hosiguide
+   - Kho bài viết & Plugin: https://lachinhan.xyz
+================================================================================
