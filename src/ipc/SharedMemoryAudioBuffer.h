@@ -259,6 +259,9 @@ namespace LiveStreamIPC
 #if defined(_WIN32) || defined(_WIN64)
         HANDLE memoryMapHandle{ nullptr };
         void* mappedView{ nullptr };
+#elif defined(__APPLE__) || defined(__linux__)
+        int shmFd{ -1 };
+        void* mappedView{ nullptr };
 #endif
         SharedAudioMemoryLayout* layout{ nullptr };
     };
