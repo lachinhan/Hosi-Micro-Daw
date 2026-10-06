@@ -686,7 +686,7 @@ blogger_html = f"""<!-- =======================================================
         <div style="font-size: 12.5px; color: #64748b; margin-top: 6px;">
           Tương thích macOS 10.15+ (Catalina -> Sequoia)
         </div>
-        <div style="font-size: 12px; color: #888; margin-top: 8px;">v2.0 • ~15.5 MB • Universal (Apple Silicon & Intel)</div>
+        <div style="font-size: 12px; color: #888; margin-top: 8px;">v2.0 • ~26.0 MB • Universal (Apple Silicon & Intel)</div>
       </div>
     </div>
 
