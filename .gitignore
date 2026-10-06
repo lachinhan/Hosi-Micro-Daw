@@ -16,6 +16,9 @@ plugins/receiver/
 *.cpp
 *.h
 *.hpp
+*.html
+blogger_embed.html
+landing_page.html
 
 # IDE & Build artifacts
 .vs/
