@@ -1,0 +1,88 @@
+name: Build macOS Universal Binary
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows manual 1-click trigger from GitHub Actions web tab
+
+jobs:
+  build-macos:
+    runs-on: macos-14 # Native Apple Silicon M1/M2 macOS Runner
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Build Tools
+        run: |
+          brew install ninja cmake
+
+      - name: Configure CMake (Universal Binary: arm64 + x86_64)
+        run: |
+          cmake -B build_mac -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
+
+      - name: Build LiveStream Micro-DAW & OBS Plugin
+        run: |
+          ninja -C build_mac LiveStreamMicroDAW LiveStreamOBSReceiver
+
+      - name: Package macOS Release Bundle
+        run: |
+          chmod +x tools/build_macos.sh
+          RELEASE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
+          mkdir -p "${RELEASE_DIR}/Plugins"
+
+          # 1. Copy Standalone App
+          cp -R "build_mac/LiveStreamMicroDAW_artefacts/Release/LiveStream Micro-DAW.app" "${RELEASE_DIR}/"
+
+          # 2. Copy Plugins (VST3 & AU Component)
+          if [ -d "build_mac/LiveStreamOBSReceiver_artefacts/Release/VST3/LiveStream OBS Receiver.vst3" ]; then
+            cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/VST3/LiveStream OBS Receiver.vst3" "${RELEASE_DIR}/Plugins/"
+          fi
+          if [ -d "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" ]; then
+            cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" "${RELEASE_DIR}/Plugins/"
+          fi
+
+          # 3. Copy Docs & Scripts
+          cp "README.md" "${RELEASE_DIR}/"
+          cp "README_EN.md" "${RELEASE_DIR}/"
+          cp "HUONG_DAN_SU_DUNG.txt" "${RELEASE_DIR}/"
+
+          # 4. Create 1-click installer command for macOS users
+          cat << 'EOF' > "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+          #!/bin/bash
+          DIR="$(cd "$(dirname "$0")" && pwd)"
+          echo ">>> Đang cài đặt Plugin LiveStream OBS Receiver vào hệ thống macOS..."
+          mkdir -p ~/Library/Audio/Plug-Ins/VST3
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+
+          if [ -d "$DIR/Plugins/LiveStream OBS Receiver.vst3" ]; then
+              cp -R "$DIR/Plugins/LiveStream OBS Receiver.vst3" ~/Library/Audio/Plug-Ins/VST3/
+              echo "✓ Đã cài VST3 vào ~/Library/Audio/Plug-Ins/VST3"
+          fi
+
+          if [ -d "$DIR/Plugins/LiveStream OBS Receiver.component" ]; then
+              cp -R "$DIR/Plugins/LiveStream OBS Receiver.component" ~/Library/Audio/Plug-Ins/Components/
+              echo "✓ Đã cài AU vào ~/Library/Audio/Plug-Ins/Components"
+          fi
+
+          echo ""
+          echo "=== HOÀN TẤT CÀI ĐẶT PLUGIN CHO OBS MAC ==="
+          EOF
+          chmod +x "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+
+          # 5. Compress to Zip
+          cd dist_macos
+          zip -r -y "LiveStream_Micro_DAW_macOS.zip" "LiveStream Micro-DAW (macOS)"
+          cd ..
+
+      - name: Upload macOS Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiveStream_Micro_DAW_macOS
+          path: dist_macos/LiveStream_Micro_DAW_macOS.zip
+          retention-days: 30
