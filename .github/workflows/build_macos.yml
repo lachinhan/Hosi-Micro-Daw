@@ -1,4 +1,4 @@
-name: Build macOS Universal Binary
+name: "Build macOS Universal Binary"
 
 on:
   push:
@@ -10,23 +10,23 @@ jobs:
     runs-on: macos-14
     
     steps:
-      - name: Checkout Source Code
+      - name: "Checkout Source Code"
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Configure CMake (Universal Binary: arm64 + x86_64)
+      - name: "Configure CMake"
         run: |
           cmake -B build_mac \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
 
-      - name: Build Standalone App & OBS Receiver Plugin
+      - name: "Build Standalone App and OBS Plugin"
         run: |
           cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver -j 4
 
-      - name: Package macOS Release Bundle
+      - name: "Package macOS Release Bundle"
         run: |
           RELEASE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
           mkdir -p "${RELEASE_DIR}/Plugins"
@@ -86,7 +86,7 @@ jobs:
           zip -r -y "LiveStream_Micro_DAW_macOS.zip" "LiveStream Micro-DAW (macOS)"
           cd ..
 
-      - name: Upload macOS Release Artifact
+      - name: "Upload macOS Release Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: LiveStream_Micro_DAW_macOS
