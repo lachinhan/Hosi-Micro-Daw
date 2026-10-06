@@ -12,6 +12,7 @@ installer_output/
 tools/
 CMakeLists.txt
 build_run.bat
+Push_To_GitHub.bat
 plugins/receiver/
 *.cpp
 *.h
