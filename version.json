@@ -1,0 +1,7 @@
+{
+  "latest_version": "2.0.0",
+  "release_date": "2026-10-06",
+  "download_url": "https://www.lachinhan.xyz",
+  "setup_url": "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/LiveStream_Micro_DAW_Setup.exe",
+  "changelog": "• Tự động dò Tone Beat và nạp vào Auto-Tune (Auto-Push on Lock).\n• Sổ Tone 1.033+ bài hát Việt Nam có Tone Nam / Nữ.\n• Trợ lý AI hướng dẫn trực tuyến 24/7 (byvn.net/hosiguide).\n• Truyền âm thanh 0ms sang OBS Studio không cần dây cáp ảo."
+}
