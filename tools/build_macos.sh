@@ -14,8 +14,8 @@ cmake -B build_mac \
     -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
 
-echo ">>> [2/4] Building LiveStream Micro-DAW & OBS Receiver Plugin..."
-cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver -j$(sysctl -n hw.ncpu)
+echo ">>> [2/4] Building LiveStream Micro-DAW & OBS Receiver Plugins (VST3 & AU)..."
+cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver_VST3 LiveStreamOBSReceiver_AU -j$(sysctl -n hw.ncpu)
 
 echo ">>> [3/4] Preparing macOS Release Bundle..."
 RELEASE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
@@ -23,15 +23,11 @@ rm -rf "dist_macos"
 mkdir -p "${RELEASE_DIR}/Plugins"
 
 # Copy Standalone App Bundle
-cp -R "build_mac/LiveStreamMicroDAW_artefacts/Release/LiveStream Micro-DAW.app" "${RELEASE_DIR}/"
+find build_mac -name "LiveStream Micro-DAW.app" -type d -exec cp -R {} "${RELEASE_DIR}/" \;
 
 # Copy OBS Receiver VST3 & AU (Component)
-if [ -d "build_mac/LiveStreamOBSReceiver_artefacts/Release/VST3/LiveStream OBS Receiver.vst3" ]; then
-    cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/VST3/LiveStream OBS Receiver.vst3" "${RELEASE_DIR}/Plugins/"
-fi
-if [ -d "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" ]; then
-    cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" "${RELEASE_DIR}/Plugins/"
-fi
+find build_mac -name "*.vst3" -type d -exec cp -R {} "${RELEASE_DIR}/Plugins/" \;
+find build_mac -name "*.component" -type d -exec cp -R {} "${RELEASE_DIR}/Plugins/" \;
 
 # Copy Documentation
 cp "README.md" "${RELEASE_DIR}/"
@@ -42,7 +38,9 @@ cp "HUONG_DAN_SU_DUNG.txt" "${RELEASE_DIR}/"
 cat << 'EOF' > "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
 #!/bin/bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
-echo ">>> Đang cài đặt Plugin LiveStream OBS Receiver vào hệ thống macOS..."
+echo "========================================================"
+echo " CÀI ĐẶT PLUGIN LIVESTREAM OBS RECEIVER CHO MACOS"
+echo "========================================================"
 mkdir -p ~/Library/Audio/Plug-Ins/VST3
 mkdir -p ~/Library/Audio/Plug-Ins/Components
 
@@ -61,6 +59,9 @@ echo "=== HOÀN TẤT CÀI ĐẶT PLUGIN CHO OBS MAC ==="
 echo "Bây giờ bạn có thể mở OBS Studio và thêm bộ lọc VST3/Audio Unit!"
 EOF
 chmod +x "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+
+echo ">>> Verifying plugins in bundle:"
+ls -la "${RELEASE_DIR}/Plugins"
 
 echo ">>> [4/4] Creating ZIP package for macOS..."
 cd "dist_macos"

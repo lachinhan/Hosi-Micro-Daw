@@ -22,41 +22,28 @@ jobs:
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
 
-      - name: "Build Standalone App and OBS Plugin"
+      - name: "Build Standalone App and OBS Plugins (VST3 & AU)"
         run: |
-          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver -j 4
+          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver_VST3 LiveStreamOBSReceiver_AU -j 4
 
       - name: "Package macOS Release Bundle"
         run: |
           RELEASE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
           mkdir -p "${RELEASE_DIR}/Plugins"
 
-          # 1. Copy Standalone App
-          APP_PATH=$(find build_mac -name "LiveStream Micro-DAW.app" -type d | head -n 1)
-          if [ -n "$APP_PATH" ]; then
-            cp -R "$APP_PATH" "${RELEASE_DIR}/"
-            echo "✓ Copied App: $APP_PATH"
-          fi
+          echo "=== 1. SEARCHING AND COPYING STANDALONE APP ==="
+          find build_mac -name "LiveStream Micro-DAW.app" -type d -exec cp -R {} "${RELEASE_DIR}/" \;
 
-          # 2. Copy Plugins (VST3 & AU Component)
-          VST3_PATH=$(find build_mac -name "LiveStream OBS Receiver.vst3" -type d | head -n 1)
-          if [ -n "$VST3_PATH" ]; then
-            cp -R "$VST3_PATH" "${RELEASE_DIR}/Plugins/"
-            echo "✓ Copied VST3: $VST3_PATH"
-          fi
+          echo "=== 2. SEARCHING AND COPYING PLUGINS ==="
+          find build_mac -name "*.vst3" -type d -exec cp -R {} "${RELEASE_DIR}/Plugins/" \;
+          find build_mac -name "*.component" -type d -exec cp -R {} "${RELEASE_DIR}/Plugins/" \;
 
-          AU_PATH=$(find build_mac -name "LiveStream OBS Receiver.component" -type d | head -n 1)
-          if [ -n "$AU_PATH" ]; then
-            cp -R "$AU_PATH" "${RELEASE_DIR}/Plugins/"
-            echo "✓ Copied AU: $AU_PATH"
-          fi
-
-          # 3. Copy Docs
+          echo "=== 3. COPYING DOCUMENTATION ==="
           cp "README.md" "${RELEASE_DIR}/"
           cp "README_EN.md" "${RELEASE_DIR}/"
           cp "HUONG_DAN_SU_DUNG.txt" "${RELEASE_DIR}/"
 
-          # 4. Create 1-click installer command for macOS users
+          echo "=== 4. CREATING 1-CLICK INSTALLER COMMAND SCRIPT ==="
           cat << 'EOF' > "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
           #!/bin/bash
           DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -78,10 +65,15 @@ jobs:
 
           echo ""
           echo "=== HOÀN TẤT CÀI ĐẶT PLUGIN CHO OBS MAC ==="
+          echo "Bây giờ bạn có thể mở OBS Studio và thêm bộ lọc VST3/Audio Unit!"
           EOF
           chmod +x "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
 
-          # 5. Compress to Zip
+          echo "=== 5. VERIFYING PACKAGE CONTENTS ==="
+          ls -la "${RELEASE_DIR}"
+          ls -la "${RELEASE_DIR}/Plugins"
+
+          echo "=== 6. COMPRESSING ZIP ARCHIVE ==="
           cd dist_macos
           zip -r -y "LiveStream_Micro_DAW_macOS.zip" "LiveStream Micro-DAW (macOS)"
           cd ..
