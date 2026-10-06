@@ -21,7 +21,7 @@ github_repo_url = "https://github.com/lachinhan/Hosi-Micro-Daw"
 github_setup_zip_url = "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/Hosi%20Micro%20Daw%20Setup.zip"
 github_setup_exe_url = "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/LiveStream_Micro_DAW_Setup.exe"
 github_portable_zip_url = "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/Hosi%20Micro%20Daw%20Portable.zip"
-github_macos_url = "https://github.com/lachinhan/Hosi-Micro-Daw"
+github_macos_url = "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/LiveStream_Micro_DAW_macOS.zip"
 
 # Blogger Post HTML (Perfect Balanced Width 88vw/1080px matching lachinhan.xyz About Me)
 blogger_html = f"""<!-- =======================================================
@@ -686,7 +686,7 @@ blogger_html = f"""<!-- =======================================================
         <div style="font-size: 12.5px; color: #64748b; margin-top: 6px;">
           Tương thích macOS 10.15+ (Catalina -> Sequoia)
         </div>
-        <div style="font-size: 12px; color: #888; margin-top: 8px;">Universal Binary (arm64 + x86_64)</div>
+        <div style="font-size: 12px; color: #888; margin-top: 8px;">v2.0 • ~15.5 MB • Universal (Apple Silicon & Intel)</div>
       </div>
     </div>
 
