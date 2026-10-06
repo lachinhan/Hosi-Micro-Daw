@@ -17,14 +17,14 @@ jobs:
 
       - name: Configure CMake (Universal Binary: arm64 + x86_64)
         run: |
-          cmake -B build_mac -G Ninja \
+          cmake -B build_mac \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
 
       - name: Build Standalone App & OBS Receiver Plugin
         run: |
-          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver_All
+          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver -j 4
 
       - name: Package macOS Release Bundle
         run: |
@@ -32,14 +32,23 @@ jobs:
           mkdir -p "${RELEASE_DIR}/Plugins"
 
           # 1. Copy Standalone App
-          cp -R "build_mac/LiveStreamMicroDAW_artefacts/Release/LiveStream Micro-DAW.app" "${RELEASE_DIR}/"
+          APP_PATH=$(find build_mac -name "LiveStream Micro-DAW.app" -type d | head -n 1)
+          if [ -n "$APP_PATH" ]; then
+            cp -R "$APP_PATH" "${RELEASE_DIR}/"
+            echo "✓ Copied App: $APP_PATH"
+          fi
 
           # 2. Copy Plugins (VST3 & AU Component)
-          if [ -d "build_mac/LiveStreamOBSReceiver_artefacts/Release/VST3/LiveStream OBS Receiver.vst3" ]; then
-            cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/VST3/LiveStream OBS Receiver.vst3" "${RELEASE_DIR}/Plugins/"
+          VST3_PATH=$(find build_mac -name "LiveStream OBS Receiver.vst3" -type d | head -n 1)
+          if [ -n "$VST3_PATH" ]; then
+            cp -R "$VST3_PATH" "${RELEASE_DIR}/Plugins/"
+            echo "✓ Copied VST3: $VST3_PATH"
           fi
-          if [ -d "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" ]; then
-            cp -R "build_mac/LiveStreamOBSReceiver_artefacts/Release/AU/LiveStream OBS Receiver.component" "${RELEASE_DIR}/Plugins/"
+
+          AU_PATH=$(find build_mac -name "LiveStream OBS Receiver.component" -type d | head -n 1)
+          if [ -n "$AU_PATH" ]; then
+            cp -R "$AU_PATH" "${RELEASE_DIR}/Plugins/"
+            echo "✓ Copied AU: $AU_PATH"
           fi
 
           # 3. Copy Docs
@@ -51,7 +60,9 @@ jobs:
           cat << 'EOF' > "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
           #!/bin/bash
           DIR="$(cd "$(dirname "$0")" && pwd)"
-          echo ">>> Đang cài đặt Plugin LiveStream OBS Receiver vào hệ thống macOS..."
+          echo "========================================================"
+          echo " CÀI ĐẶT PLUGIN LIVESTREAM OBS RECEIVER CHO MACOS"
+          echo "========================================================"
           mkdir -p ~/Library/Audio/Plug-Ins/VST3
           mkdir -p ~/Library/Audio/Plug-Ins/Components
 
