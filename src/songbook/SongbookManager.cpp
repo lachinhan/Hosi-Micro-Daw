@@ -224,7 +224,8 @@ std::vector<SongItem> SongbookManager::searchSongs(const juce::String& query, co
         const juce::String cleanArtist = removeVietnameseAccents(song.artist).toLowerCase();
         const juce::String cleanComposer = removeVietnameseAccents(song.composer).toLowerCase();
 
-        if (cleanTitle.contains(cleanQuery) || cleanArtist.contains(cleanQuery) || cleanComposer.contains(cleanQuery))
+        if (cleanTitle.contains(cleanQuery) || cleanArtist.contains(cleanQuery) || cleanComposer.contains(cleanQuery)
+            || (cleanQuery.length() >= 4 && cleanTitle.length() >= 4 && cleanQuery.contains(cleanTitle)))
         {
             results.push_back(song);
         }
