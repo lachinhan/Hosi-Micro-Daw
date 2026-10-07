@@ -14,14 +14,26 @@
    - ⚡ Nút [⚡ AUTO]: Tự động nạp Tone đã chốt sang Auto-Tune Pro không cần thao tác tay.
    - ⚡ Truyền âm thanh độ trễ 0ms sang OBS Studio qua LiveStream OBS Receiver (IPC).
    - ⚡ Hỗ trợ nạp đầy đủ chuỗi VST3: Auto-Tune, FabFilter, Reverb, Delay,...
-   - ⚡ Tự động kiểm tra bản cập nhật mới nhất từ GitHub.
+   - 📺 TRÌNH PHÁT YOUTUBE KARAOKE (PRO EDITION):
+     + Dò Tone YouTube 1-chạm nạp thẳng vào Auto-Tune.
+     + Lên/Hạ Tone Auto-Tune khi nhạc chuyển tone: [MOD MIC: -1, 0, +1, +2].
+     + Đổi Tone Beat YouTube theo thời gian thực: [BEAT: -3..+3].
+     + Song ca Nam - Nữ 1-chạm: [♂ NAM] / [♀ NỮ].
+   - ⌨ PHÍM TẮT NHANH KHI HÁT TRỰC TIẾP (PRO):
+     + Phím ']' hoặc 'PageUp' : Lên +1 Tone Auto-Tune (khi bài hát lên tone)
+     + Phím '[' hoặc 'PageDown': Hạ -1 Tone Auto-Tune
+     + Phím '+' / '-'         : Tăng / Giảm Tone Beat YouTube
+     + Phím '0'               : Trả về Tone chuẩn ban đầu
+     + Phím 'M' hoặc '1'      : Chuyển Auto-Tune sang Tone Nam
+     + Phím 'F' hoặc '2'      : Chuyển Auto-Tune sang Tone Nữ
+     + Phím 'D' hoặc 'Tab'    : Đảo qua lại Tone Nam <-> Nữ
 
 3. HƯỚNG DẪN CÀI ĐẶT & KẾT NỐI OBS:
    Bước 1: Chạy file cài đặt "LiveStream_Micro_DAW_Setup.exe" hoặc giải nén bản Portable.
    Bước 2: Mở phần mềm "LiveStream Micro-DAW", chọn Soundcard / Driver ASIO hoặc Windows Audio.
    Bước 3: Chèn các Plugin VST3 mong muốn vào khay hiệu ứng (Insert Effects).
    Bước 4: Mở OBS Studio, thêm bộ lọc (Audio Filter) -> VST 2.x Plug-in -> Chọn "LiveStream OBS Receiver".
-   Bước 5: Bật nút [IPC OBS: BẬT] trên Micro-DAW. m thanh chuẩn phòng thu sẽ lập tức 
+   Bước 5: Bật nút [IPC OBS: BẬT] trên Micro-DAW. Âm thanh chuẩn phòng thu sẽ lập tức 
            truyền thẳng sang livestream của bạn với độ trễ 0ms!
 
 4. HỖ TRỢ KỸ THUẬT & DỊCH VỤ CÀI ĐẶT:

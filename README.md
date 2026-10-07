@@ -65,6 +65,20 @@ Một hệ thống **Micro-DAW chuyên dụng cho Livestream & Hát Live** siêu
   - 🎤 **`LIVE (F1)` - HÁT LIVE**: Bật trọn bộ Vocal Chain chất lượng cao (Auto-Tune + EQ + Comp + Reverb/Delay mịn).
   - 💬 **`TALK (F2)` - GIAO LƯU**: Tự động bypass Auto-Tune & Reverb trong 1/1000s, giữ lại Noise Gate + Compressor giúp giọng nói mộc ấm áp, rõ ràng, không bị vang vọng khó chịu khi tâm sự với khán giả.
   - 🔥 **`TUNE (F3)` - AUTOTUNE**: Bật chế độ ép Tune sôi động cho nhạc Trap, Remix, Vinahouse.
+- **📺 Trình Phát YouTube Karaoke Chuyên Nghiệp (PRO Edition ⭐)**:
+  - **Tích hợp YouTube Player trực tiếp**: Tìm kiếm và phát beat karaoke trên YouTube ngay trong ứng dụng với giao diện tối ưu không quảng cáo (**`🛡️ CHẶN QC / LIVE`**).
+  - **Dò Tone YouTube 1-Chạm (`🎯 DÒ TONE`)**: Tự động nhận diện chính xác tên bài hát và Tone chuẩn từ cơ sở dữ liệu 1.033+ bài hát Việt Nam kết hợp tiêu đề video.
+  - **Lên/Hạ Tone Auto-Tune Khi Nhạc Chuyển Tone (`MOD MIC: [-1] [0] [+1] [+2]`)**: Khi bài hát tự chuyển tone ở giang tấu / điệp khúc cuối, người dùng chỉ cần bấm nút hoặc gõ phím tắt để nâng Tone Auto-Tune khớp với nốt mới, **hoàn toàn giữ nguyên 100% nhạc nền YouTube không bị méo tiếng**.
+  - **Nâng/Hạ Cao Độ Beat YouTube (`BEAT: [-3] ... [+3]`)**: Tăng/giảm cao độ Beat YouTube theo thời gian thực khi không có beat vừa giọng, đồng thời tự động đồng bộ sang Auto-Tune.
+  - **Song Ca Nam - Nữ Tức Thời (`[♂ NAM]` / `[♀ NỮ]`)**: Tự động hiển thị sẵn Tone Nam & Nữ cho bài hát, bấm 1 chạm để đổi Tone Auto-Tune khi đến lượt Nam hoặc Nữ hát (độ trễ 0ms).
+  - **Hệ thống phím tắt toàn năng khi hát**:
+    - `]` (hoặc `PageUp`): Lên +1 Tone Auto-Tune (khi bài hát lên tone).
+    - `[` (hoặc `PageDown`): Hạ -1 Tone Auto-Tune.
+    - `+` / `-`: Tăng / Giảm cao độ Beat YouTube.
+    - `0`: Trả tất cả về Tone gốc ban đầu.
+    - `M` hoặc `1`: Chuyển Auto-Tune sang Tone Nam.
+    - `F` hoặc `2`: Chuyển Auto-Tune sang Tone Nữ.
+    - `D` hoặc `Tab`: Đảo nhanh Tone Nam $\leftrightarrow$ Nữ.
 - **💖 Tích Hợp Mã QR Donate & Hỗ Trợ Tác Giả**: Tích hợp nút **`☕ DONATE`** trên thanh tiêu đề mở hộp thoại mã QR MoMo, VietQR MBBank sắc nét kèm tính năng 1-click sao chép Số tài khoản và Nội dung chuyển khoản nhanh chóng.
 - **Tùy Chỉnh Tỷ Lệ Giao Diện (UI Zoom Scaling)**: Hỗ trợ 3 kích thước hiển thị: **85% Nhỏ gọn (Compact)**, **100% Tiêu chuẩn (Standard)**, và **125% Rộng rãi (Large)**, tự động căn giữa màn hình.
 
@@ -189,6 +203,25 @@ LiveStream_Micro_DAW_Setup.exe
 
 ### 9. Phóng To / Thu Nhỏ Giao Diện
 - Ở góc trên cùng, bạn có thể bấm chuyển đổi giữa **85%**, **100%**, và **125%** để giao diện hiển thị vừa vặn nhất với độ phân giải màn hình của bạn (Laptop 1080p hay Màn hình rời 2K/4K).
+
+### 10. Trình Phát YouTube Karaoke & Phím Tắt Toàn Năng (PRO Edition ⭐)
+- **Mở trình phát**: Bấm nút **`📺 YOUTUBE KARAOKE`** (hoặc mở bài hát từ Sổ Tone).
+- **Tính năng nổi bật**:
+  1. **🎯 Dò Tone Tự Động (`🎯 DÒ TONE (AUTO-KEY)`)**: Tự động nhận diện tên bài hát và nạp thẳng Tone chuẩn vào Auto-Tune Pro trong Rack.
+  2. **🎤 Lên/Hạ Tone Auto-Tune Khi Nhạc Chuyển Tone (`MOD MIC: [-1] [0] [+1] [+2]`)**: Khi bài hát chuyển tone ở giang tấu / điệp khúc cuối, bấm nút hoặc phím tắt để nâng Tone Auto-Tune cho giọng hát, **hoàn toàn giữ nguyên 100% nhạc nền YouTube đang phát**.
+  3. **🎛️ Tăng/Giảm Cao Độ Beat YouTube (`BEAT: [-3] ... [+3]`)**: Tăng/giảm cao độ Beat YouTube theo thời gian thực khi không có beat vừa giọng, đồng thời tự động đồng bộ sang Auto-Tune.
+  4. **👫 Chuyển Tone Song Ca Nam - Nữ (`[♂ NAM]` / `[♀ NỮ]`)**: Chuyển đổi Tone Auto-Tune tức thì cho giọng Nam hoặc Nữ với 1 cú click.
+
+#### ⌨️ Bảng Phím Tắt Nhanh Khi Hát Trực Tiếp:
+| Phím tắt | Chức năng | Cơ chế hoạt động |
+| :--- | :--- | :--- |
+| **`]`** hoặc **`PageUp`** | **Lên Tone Auto-Tune (+1)** | Nâng Tone Auto-Tune lên +1 nửa cung khi bài hát lên tone (giữ nguyên nhạc YouTube) |
+| **`[`** hoặc **`PageDown`** | **Hạ Tone Auto-Tune (-1)** | Hạ Tone Auto-Tune xuống -1 nửa cung (giữ nguyên nhạc YouTube) |
+| **`+`** / **`-`** (hoặc `↑`/`↓`) | **Tăng / Giảm Tone Beat YouTube** | Đổi cao độ Beat YouTube và tự động cập nhật Auto-Tune |
+| **`0`** | **Reset Tone Gốc** | Đưa cả Beat YouTube và Auto-Tune về Tone chuẩn ban đầu |
+| **`M`** hoặc **`1`** | **Hát Tone Nam** | Chuyển Auto-Tune sang Tone Nam (giữ nguyên Beat) |
+| **`F`** hoặc **`2`** | **Hát Tone Nữ** | Chuyển Auto-Tune sang Tone Nữ (giữ nguyên Beat) |
+| **`D`** hoặc **`Tab`** | **Đảo Tone Nam $\leftrightarrow$ Nữ** | Chuyển đổi qua lại giữa 2 giọng Nam và Nữ |
 
 ---
 

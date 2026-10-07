@@ -47,6 +47,20 @@ The application allows you to connect your microphone directly to professional V
   - 🎤 **HÁT LIVE (Singing)**: Engages the full vocal chain (Auto-Tune + EQ + Compressor + Reverb Aux).
   - 💬 **GIAO LƯU (Talk/Chat)**: Automatically bypasses Auto-Tune & Reverb while maintaining Noise Gate and Compression for crisp, intelligible speech.
   - 🔥 **AUTOTUNE (Hard-Tune)**: Delivers aggressive pitch correction and spatial processing for energetic genres.
+- **📺 Professional YouTube Karaoke Player (PRO Edition ⭐)**:
+  - **Embedded YouTube Karaoke Portal**: Search and stream karaoke backing tracks directly inside the DAW with an ad-free clean interface (**`🛡️ CHẶN QC / LIVE`**).
+  - **1-Touch YouTube Tone Detection (`🎯 DÒ TONE`)**: Automatically detects song titles and matches them against a 1,033+ song database to feed accurate root keys and scales directly into Auto-Tune.
+  - **Vocal Auto-Tune Modulation on Key Changes (`MOD MIC: [-1] [0] [+1] [+2]`)**: When the backing music naturally shifts key at the bridge or chorus, singer can press a button or hotkey to transpose Auto-Tune, **keeping the YouTube backing track 100% natural with zero pitch distortion**.
+  - **Real-Time YouTube Beat Transposition (`BEAT: [-3] ... [+3]`)**: Shift the backing track pitch in real-time when a suitable singer key is unavailable, with automatic Auto-Tune synchronization.
+  - **1-Click Male / Female Duet Switching (`[♂ NAM]` / `[♀ NỮ]`)**: Instantly toggle between male and female vocal keys with 0ms latency.
+  - **Live Keyboard Performance Shortcuts**:
+    - `]` (or `PageUp`): Transpose Auto-Tune +1 semitone (on song modulation).
+    - `[` (or `PageDown`): Transpose Auto-Tune -1 semitone.
+    - `+` / `-`: Transpose YouTube Beat pitch.
+    - `0`: Reset both Beat and Auto-Tune to original factory key.
+    - `M` or `1`: Switch Auto-Tune to Male key.
+    - `F` or `2`: Switch Auto-Tune to Female key.
+    - `D` or `Tab`: Fast toggle Male $\leftrightarrow$ Female keys.
 - **💖 Creator Support & QR Donation Modal**: Top header **`☕ DONATE`** button opens a high-resolution QR modal (VietQR MBBank & MoMo) with 1-click clipboard copy for account numbers and transfer notes.
 - **Custom UI Zoom Scaling**: 3 responsive scaling modes: **85% (Compact)**, **100% (Standard)**, and **125% (Large)** with auto-window centering.
 
@@ -171,6 +185,25 @@ To ensure crystal-clear stream audio with zero latency and no double-monitoring 
 
 ### 9. Adjusting UI Zoom
 - Click the **85%**, **100%**, or **125%** buttons on the top bar to scale the interface to match your display resolution.
+
+### 10. YouTube Karaoke Player & Performance Hotkeys (PRO Edition ⭐)
+- **Open Player**: Click the **`📺 YOUTUBE KARAOKE`** button on the top header (or launch tracks from the Songbook).
+- **Core Features**:
+  1. **🎯 1-Touch Tone Detection (`🎯 DÒ TONE (AUTO-KEY)`)**: Automatically detects song titles and syncs correct key and scale into Auto-Tune Pro.
+  2. **🎤 Vocal Auto-Tune Modulation on Key Changes (`MOD MIC: [-1] [0] [+1] [+2]`)**: When the song naturally modulates at the bridge or chorus, press the button or hotkey to transpose Auto-Tune, **keeping the YouTube video playback untouched**.
+  3. **🎛️ Real-Time YouTube Beat Transposition (`BEAT: [-3] ... [+3]`)**: Transpose the backing track in real-time when a suitable vocal key is not available, with automatic Auto-Tune synchronization.
+  4. **👫 1-Click Male / Female Duet Switching (`[♂ NAM]` / `[♀ NỮ]`)**: Instant toggle between male and female keys with 0ms latency.
+
+#### ⌨️ Live Performance Hotkeys Table:
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| **`]`** or **`PageUp`** | **Auto-Tune Transpose (+1)** | Transpose Auto-Tune +1 semitone when song modulates (YouTube beat untouched) |
+| **`[`** or **`PageDown`** | **Auto-Tune Transpose (-1)** | Transpose Auto-Tune -1 semitone (YouTube beat untouched) |
+| **`+`** / **`-`** (or `↑`/`↓`) | **Transpose YouTube Beat** | Shift YouTube backing track pitch with auto Auto-Tune sync |
+| **`0`** | **Reset to Original Key** | Reset both Beat and Auto-Tune to default key |
+| **`M`** or **`1`** | **Male Vocal Tone** | Switch Auto-Tune to Male key |
+| **`F`** or **`2`** | **Female Vocal Tone** | Switch Auto-Tune to Female key |
+| **`D`** or **`Tab`** | **Toggle Male $\leftrightarrow$ Female** | Fast toggle between Male and Female vocal keys |
 
 ---
 
