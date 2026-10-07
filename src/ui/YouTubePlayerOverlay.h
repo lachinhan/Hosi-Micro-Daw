@@ -2,11 +2,12 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "../audio/KeyDetector.h"
+#include "../songbook/SongbookManager.h"
 
 class YouTubePlayerOverlay : public juce::Component, public juce::TextEditor::Listener
 {
 public:
-    YouTubePlayerOverlay();
+    YouTubePlayerOverlay(SongbookManager* songbookMgr = nullptr);
     ~YouTubePlayerOverlay() override = default;
 
     void paint(juce::Graphics& g) override;
@@ -22,6 +23,7 @@ public:
     std::function<void()> onOpenSongbook;
 
 private:
+    SongbookManager* songbookManager{ nullptr };
     juce::Label titleLabel;
     juce::TextButton closeButton{ "X" };
 

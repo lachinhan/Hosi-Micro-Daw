@@ -213,7 +213,7 @@ MainComponent::MainComponent()
 
 #if HOSI_PRO_EDITION
     // YouTube Karaoke Player Overlay (PRO Edition)
-    youtubeOverlay = std::make_unique<YouTubePlayerOverlay>();
+    youtubeOverlay = std::make_unique<YouTubePlayerOverlay>(&songbookManager);
     youtubeOverlay->onCloseClicked = [this]() {
         showYouTubePlayer(false);
     };

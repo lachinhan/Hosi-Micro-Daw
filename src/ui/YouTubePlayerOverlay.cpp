@@ -1,6 +1,7 @@
 #include "YouTubePlayerOverlay.h"
 
-YouTubePlayerOverlay::YouTubePlayerOverlay()
+YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
+    : songbookManager(songbookMgr)
 {
     // Title
     titleLabel.setText(juce::String::fromUTF8(u8"📺 MINI YOUTUBE KARAOKE PLAYER (SIÊU NHẸ)"), juce::dontSendNotification);
@@ -357,11 +358,152 @@ void YouTubePlayerOverlay::showManualToneMenu()
 
 void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
 {
-    // If audio key detector callback is wired, run it
-    if (onDetectAndPushToAutoTune)
+    // 1. First, try to read the active YouTube video title via JavaScript
+    juce::String jsGetTitle = 
+        "(function() {"
+        "  var t = '';"
+        "  var el = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, #title h1 yt-formatted-string, ytd-watch-metadata #title, h1.title, #video-title');"
+        "  if (el && el.innerText) { t = el.innerText.trim(); }"
+        "  else { t = document.title || ''; }"
+        "  return t;"
+        "})();";
+
+    auto handleTitleAnalysis = [this](const juce::String& videoTitle) {
+        juce::String title = videoTitle.trim();
+        if (title.isEmpty())
+            title = searchEditor.getText().trim();
+
+        bool toneFound = false;
+        juce::String detectedTone;
+        int rootNote = 0;
+        bool isMinor = false;
+        juce::String songMatchedName = title;
+
+        // --- Regex / Pattern check for explicit key in title ---
+        // (Am), [Am], (Tone Nam: Dm), (Tone Nữ: Gm), Tone Dm, Tone Am, Am, Em, etc.
+        const char* allNotes[] = { "C#m", "D#m", "F#m", "G#m", "A#m", "Db", "Eb", "Gb", "Ab", "Bb", 
+                                   "C#", "D#", "F#", "G#", "A#", "Am", "Bm", "Cm", "Dm", "Em", "Fm", "Gm",
+                                   "C", "D", "E", "F", "G", "A", "B" };
+
+        for (const char* note : allNotes)
+        {
+            juce::String noteStr = note;
+            // Check enclosed format: (Am), [Am], || Am ||, - Am, Tone Am, Tone: Am
+            if (title.containsIgnoreCase("(" + noteStr + ")") ||
+                title.containsIgnoreCase("[" + noteStr + "]") ||
+                title.containsIgnoreCase(" " + noteStr + " ") ||
+                title.containsIgnoreCase("Tone " + noteStr) ||
+                title.containsIgnoreCase("Tone: " + noteStr) ||
+                title.containsIgnoreCase("Tone:" + noteStr) ||
+                title.endsWithIgnoreCase(" " + noteStr) ||
+                title.endsWithIgnoreCase("-" + noteStr))
+            {
+                detectedTone = noteStr;
+                toneFound = true;
+                break;
+            }
+        }
+
+        // --- Check Database search in SongbookManager ---
+        if (!toneFound && songbookManager != nullptr)
+        {
+            // Clean title to extract song name
+            juce::String query = title;
+            query = query.replace("karaoke", "", true)
+                         .replace("beat", "", true)
+                         .replace("chuan", "", true)
+                         .replace(juce::String::fromUTF8(u8"chuẩn"), "", true)
+                         .replace("tone nam", "", true)
+                         .replace(juce::String::fromUTF8(u8"tone nữ"), "", true)
+                         .replace("giong nam", "", true)
+                         .replace(juce::String::fromUTF8(u8"giọng nam"), "", true)
+                         .replace("giong nu", "", true)
+                         .replace(juce::String::fromUTF8(u8"giọng nữ"), "", true)
+                         .replace("official", "", true)
+                         .replace("remix", "", true)
+                         .replace("mv", "", true)
+                         .replace("4k", "", true)
+                         .replace("hd", "", true)
+                         .replace("mashup", "", true)
+                         .replace("nhac song", "", true)
+                         .replace(juce::String::fromUTF8(u8"nhạc sống"), "", true)
+                         .replace("acoustic", "", true)
+                         .replace("phoi chuan", "", true)
+                         .replace(juce::String::fromUTF8(u8"phối chuẩn"), "", true)
+                         .trimCharactersAtStart("- |–[]()")
+                         .trimCharactersAtEnd("- |–[]()")
+                         .trim();
+
+            auto results = songbookManager->searchSongs(query);
+            if (!results.empty())
+            {
+                const auto& song = results.front();
+                songMatchedName = song.title;
+                if (title.containsIgnoreCase("nu") || title.containsIgnoreCase("nữ") || title.containsIgnoreCase("female"))
+                {
+                    detectedTone = song.keyFemale;
+                }
+                else if (title.containsIgnoreCase("nam") || title.containsIgnoreCase("male"))
+                {
+                    detectedTone = song.keyMale;
+                }
+                else
+                {
+                    detectedTone = song.getEffectiveTone();
+                }
+                toneFound = true;
+            }
+        }
+
+        if (toneFound && detectedTone.isNotEmpty())
+        {
+            SongbookManager::parseKeyAndScale(detectedTone, rootNote, isMinor);
+            auto scaleType = isMinor ? KeyDetector::ScaleType::Minor : KeyDetector::ScaleType::Major;
+
+            if (onApplyTone)
+            {
+                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + "]");
+            }
+
+            juce::String alertMsg = juce::String::fromUTF8(u8"✓ Tự động nhận diện Tone bài hát từ YouTube:\n\n")
+                                  + juce::String::fromUTF8(u8"• Bài hát / Video: ") + songMatchedName + "\n"
+                                  + juce::String::fromUTF8(u8"• Tone phát hiện: [") + detectedTone + (isMinor ? " (Thứ)]\n" : " (Trưởng)]\n")
+                                  + juce::String::fromUTF8(u8"• Đã tự động nạp thành công vào Auto-Tune trong Rack!");
+
+            juce::AlertWindow::showMessageBoxAsync(
+                juce::AlertWindow::InfoIcon,
+                juce::String::fromUTF8(u8"🎯 DÒ TONE YOUTUBE THÀNH CÔNG"),
+                alertMsg,
+                "OK"
+            );
+        }
+        else
+        {
+            // If neither detected from title, trigger audio detection or open manual tone picker
+            if (onDetectAndPushToAutoTune)
+            {
+                onDetectAndPushToAutoTune();
+            }
+            showManualToneMenu();
+        }
+    };
+
+    if (webBrowser != nullptr)
     {
-        onDetectAndPushToAutoTune();
+        webBrowser->evaluateJavascript(jsGetTitle, [handleTitleAnalysis](juce::WebBrowserComponent::EvaluationResult result) {
+            juce::String vTitle;
+            if (const auto* r = result.getResult())
+            {
+                vTitle = r->toString().trim();
+            }
+            handleTitleAnalysis(vTitle);
+        });
+    }
+    else
+    {
+        handleTitleAnalysis({});
     }
 }
+
 
 
