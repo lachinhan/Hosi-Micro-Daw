@@ -62,17 +62,6 @@ target_include_directories(LiveStreamIPC INTERFACE
 )
 target_compile_features(LiveStreamIPC INTERFACE cxx_std_20)
 
-# ==============================================================================
-# Target 1: Standalone Micro-DAW Application ("LiveStreamMicroDAW")
-# ==============================================================================
-juce_add_gui_app(LiveStreamMicroDAW
-    PRODUCT_NAME "LiveStream Micro-DAW"
-    COMPANY_NAME "LiveStreamAudio"
-    BUNDLE_IDENTIFIER "com.livestreamaudio.microdaw"
-    ICON_BIG "assets/icon.png"
-    ICON_SMALL "assets/icon.png"
-)
-
 juce_add_binary_data(AppBinaryData
     SOURCES
     assets/icon.png
@@ -83,7 +72,10 @@ juce_add_binary_data(AppBinaryData
     assets/songbook.json
 )
 
-target_sources(LiveStreamMicroDAW PRIVATE
+# ==============================================================================
+# Common DAW Source Files
+# ==============================================================================
+set(COMMON_DAW_SOURCES
     src/main.cpp
     src/MainComponent.cpp
     src/MainComponent.h
@@ -128,7 +120,21 @@ target_sources(LiveStreamMicroDAW PRIVATE
     src/audio/AudioRecorder.h
 )
 
+# ==============================================================================
+# Target 1: Standalone Micro-DAW FREE (Community Edition v2.x)
+# ==============================================================================
+juce_add_gui_app(LiveStreamMicroDAW
+    PRODUCT_NAME "LiveStream Micro-DAW"
+    COMPANY_NAME "LiveStreamAudio"
+    BUNDLE_IDENTIFIER "com.livestreamaudio.microdaw"
+    ICON_BIG "assets/icon.png"
+    ICON_SMALL "assets/icon.png"
+)
+
+target_sources(LiveStreamMicroDAW PRIVATE ${COMMON_DAW_SOURCES})
+
 target_compile_definitions(LiveStreamMicroDAW PRIVATE
+    HOSI_PRO_EDITION=0
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_PLUGINHOST_VST3=1
@@ -174,6 +180,83 @@ target_link_libraries(LiveStreamMicroDAW PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp
 )
+
+# ==============================================================================
+# Target 2: Standalone Micro-DAW PRO (Commercial Studio AI Edition v3.x)
+# ==============================================================================
+juce_add_gui_app(LiveStreamMicroDAW_PRO
+    PRODUCT_NAME "LiveStream Micro-DAW PRO"
+    COMPANY_NAME "LiveStreamAudio"
+    BUNDLE_IDENTIFIER "com.livestreamaudio.microdaw.pro"
+    ICON_BIG "assets/icon.png"
+    ICON_SMALL "assets/icon.png"
+)
+
+target_sources(LiveStreamMicroDAW_PRO PRIVATE
+    ${COMMON_DAW_SOURCES}
+    src/ui/YouTubePlayerOverlay.cpp
+    src/ui/YouTubePlayerOverlay.h
+)
+
+target_compile_definitions(LiveStreamMicroDAW_PRO PRIVATE
+    HOSI_PRO_EDITION=1
+    JUCE_WEB_BROWSER=1
+    JUCE_USE_CURL=0
+    JUCE_PLUGINHOST_VST3=1
+)
+
+if(WIN32)
+    target_compile_definitions(LiveStreamMicroDAW_PRO PRIVATE
+        JUCE_PLUGINHOST_AU=0
+        JUCE_WASAPI=1
+        JUCE_DIRECTSOUND=1
+        JUCE_USE_WIN_WEBVIEW2=1
+        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
+    )
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/include/WebView2.h")
+        target_include_directories(LiveStreamMicroDAW_PRO PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/include
+        )
+        target_link_libraries(LiveStreamMicroDAW_PRO PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2LoaderStatic.lib"
+            version
+        )
+    endif()
+elseif(APPLE)
+    target_compile_definitions(LiveStreamMicroDAW_PRO PRIVATE
+        JUCE_PLUGINHOST_AU=1
+        JUCE_COREAUDIO=1
+    )
+endif()
+
+if(JUCE_ASIO_AVAILABLE)
+    target_compile_definitions(LiveStreamMicroDAW_PRO PRIVATE JUCE_ASIO=1)
+    target_include_directories(LiveStreamMicroDAW_PRO PRIVATE 
+        ${ASIO_SDK_DIR}/common
+        ${ASIO_SDK_DIR}/host
+        ${ASIO_SDK_DIR}/host/pc
+    )
+else()
+    target_compile_definitions(LiveStreamMicroDAW_PRO PRIVATE JUCE_ASIO=0)
+endif()
+
+target_link_libraries(LiveStreamMicroDAW_PRO PRIVATE
+    LiveStreamIPC
+    AppBinaryData
+    juce::juce_core
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_data_structures
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+    juce::juce_audio_basics
+    juce::juce_audio_devices
+    juce::juce_audio_formats
+    juce::juce_audio_processors
+    juce::juce_audio_utils
+    juce::juce_dsp
+)
+
 
 # ==============================================================================
 # Target 2: OBS Receiver Plugin (VST2 for OBS Studio & VST3/AU for DAWs)

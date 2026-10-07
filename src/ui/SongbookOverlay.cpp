@@ -185,7 +185,20 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr)
             applySelectedTone(finalTone);
         }
     };
-    addAndMakeVisible(applyAutoTuneButton);
+#if HOSI_PRO_EDITION
+    // Open YouTube Beat Button (PRO Edition)
+    openYouTubeBeatButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xffe11d48)); // YouTube Crimson
+    openYouTubeBeatButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    openYouTubeBeatButton.onClick = [this]() {
+        if (selectedIndex >= 0 && selectedIndex < static_cast<int>(displayedSongs.size()))
+        {
+            const auto& s = displayedSongs[static_cast<size_t>(selectedIndex)];
+            if (onPlayYouTubeBeat)
+                onPlayYouTubeBeat(s.title + " " + s.artist);
+        }
+    };
+    addAndMakeVisible(openYouTubeBeatButton);
+#endif
 
     // Save Custom Tone
     saveCustomToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0284c7));
@@ -659,17 +672,21 @@ void SongbookOverlay::resized()
     detailArea.removeFromTop(20);
 
     // Big Action Button
-    applyAutoTuneButton.setBounds(detailArea.removeFromTop(44));
-    detailArea.removeFromTop(12);
+    applyAutoTuneButton.setBounds(detailArea.removeFromTop(40));
+    detailArea.removeFromTop(8);
+#if HOSI_PRO_EDITION
+    openYouTubeBeatButton.setBounds(detailArea.removeFromTop(36));
+    detailArea.removeFromTop(10);
+#endif
 
     // Save Custom Tone & Favorite Row
-    auto actionRow = detailArea.removeFromTop(36);
+    auto actionRow = detailArea.removeFromTop(34);
     int halfW = (actionRow.getWidth() - 8) / 2;
     saveCustomToneButton.setBounds(actionRow.removeFromLeft(halfW));
     favoriteButton.setBounds(actionRow.removeFromRight(halfW));
-    detailArea.removeFromTop(12);
+    detailArea.removeFromTop(10);
 
-    deleteSongButton.setBounds(detailArea.removeFromTop(32).removeFromRight(120));
+    deleteSongButton.setBounds(detailArea.removeFromTop(30).removeFromRight(120));
 
     // Toast positioning if visible
     if (toastComponent.isVisible())

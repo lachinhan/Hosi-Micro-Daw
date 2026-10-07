@@ -26,6 +26,9 @@ public:
 
     std::function<void()> onCloseClicked;
     std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& songName)> onApplyTone;
+#if HOSI_PRO_EDITION
+    std::function<void(const juce::String& songName)> onPlayYouTubeBeat;
+#endif
 
     void refreshList();
     void selectSong(int index);
@@ -65,6 +68,9 @@ private:
     juce::TextButton transposeUpBtn{ "+1" };
 
     juce::TextButton applyAutoTuneButton{ juce::String::fromUTF8(u8"⚡ ĐỒNG BỘ VÀO AUTO-TUNE") };
+#if HOSI_PRO_EDITION
+    juce::TextButton openYouTubeBeatButton{ juce::String::fromUTF8(u8"📺 MỞ BEAT YOUTUBE") };
+#endif
     juce::TextButton saveCustomToneButton{ juce::String::fromUTF8(u8"💾 Lưu Tone Của Tôi") };
     juce::TextButton favoriteButton{ juce::String::fromUTF8(u8"❤️ Yêu Thích") };
     juce::TextButton deleteSongButton{ juce::String::fromUTF8(u8"🗑 Xóa Bài") };

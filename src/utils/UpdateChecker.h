@@ -6,12 +6,21 @@
 class UpdateChecker
 {
 public:
-    static constexpr const char* CURRENT_VERSION = "2.0.0";
+#if HOSI_PRO_EDITION
+    static constexpr const char* CURRENT_VERSION = "3.0.0";
+    static constexpr const char* UPDATE_URL = "";
+    static constexpr const char* FALLBACK_WEB_URL = "https://www.lachinhan.xyz";
+#else
+    static constexpr const char* CURRENT_VERSION = "2.0.1";
     static constexpr const char* UPDATE_URL = "https://raw.githubusercontent.com/lachinhan/Hosi-Micro-Daw/main/version.json";
     static constexpr const char* FALLBACK_WEB_URL = "https://www.lachinhan.xyz";
+#endif
 
     static void check(bool isManualCheck = false)
     {
+#if HOSI_PRO_EDITION
+        if (!isManualCheck) return; // Do not auto-check Free updates in PRO edition
+#endif
         // Run check asynchronously in background thread to avoid blocking UI/Audio
         juce::Thread::launch([isManualCheck]() {
             bool success = false;
@@ -20,6 +29,22 @@ public:
             juce::String downloadUrl = FALLBACK_WEB_URL;
             juce::String setupUrl = "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/LiveStream_Micro_DAW_Setup.exe";
             juce::String changelog;
+
+            if (juce::String(UPDATE_URL).isEmpty())
+            {
+                juce::MessageManager::callAsync([isManualCheck]() {
+                    if (isManualCheck)
+                    {
+                        juce::AlertWindow::showMessageBoxAsync(
+                            juce::AlertWindow::InfoIcon,
+                            juce::String::fromUTF8(u8"Kiểm Tra Cập Nhật"),
+                            juce::String::fromUTF8(u8"✓ LiveStream Micro-DAW PRO v") + CURRENT_VERSION + juce::String::fromUTF8(u8" đang là phiên bản Studio mới nhất!"),
+                            "OK"
+                        );
+                    }
+                });
+                return;
+            }
 
             try
             {

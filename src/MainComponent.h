@@ -13,6 +13,9 @@
 #include "ui/BuiltInDspComponent.h"
 #include "songbook/SongbookManager.h"
 #include "utils/UpdateChecker.h"
+#if HOSI_PRO_EDITION
+#include "ui/YouTubePlayerOverlay.h"
+#endif
 
 class CompactModeIconButton : public juce::Button
 {
@@ -158,6 +161,13 @@ private:
     std::unique_ptr<SongbookOverlay> songbookOverlay;
     bool isSongbookOverlayVisible{ false };
 
+#if HOSI_PRO_EDITION
+    // Mini YouTube Karaoke Player (PRO Feature)
+    juce::TextButton youtubeButton{ juce::String::fromUTF8(u8"📺 YOUTUBE BEAT") };
+    std::unique_ptr<YouTubePlayerOverlay> youtubeOverlay;
+    bool isYouTubeOverlayVisible{ false };
+#endif
+
     bool isCompactMode{ false };
     bool wasInCompactModeBeforeOverlay{ false };
     bool isAlwaysOnTop{ false };
@@ -172,6 +182,9 @@ private:
     void showSettings(bool show);
     void showDonate(bool show);
     void showSongbook(bool show);
+#if HOSI_PRO_EDITION
+    void showYouTubePlayer(bool show, const juce::String& initialSongName = {});
+#endif
     void updatePresetButtonsUI();
     void updateMuteButtonUI();
     void updateInputSourceButtonUI();

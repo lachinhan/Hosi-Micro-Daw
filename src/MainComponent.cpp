@@ -102,6 +102,17 @@ MainComponent::MainComponent()
     };
     addAndMakeVisible(songbookButton);
 
+#if HOSI_PRO_EDITION
+    // YouTube Karaoke Player Button (PRO Edition)
+    youtubeButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff991b1b)); // Crimson red
+    youtubeButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfffecdd3));
+    youtubeButton.setTooltip(juce::String::fromUTF8(u8"Mở Mini YouTube Karaoke Player (Tự động bỏ qua quảng cáo, Chế độ Live)"));
+    youtubeButton.onClick = [this]() {
+        showYouTubePlayer(!isYouTubeOverlayVisible);
+    };
+    addAndMakeVisible(youtubeButton);
+#endif
+
     // Donate / Support Creator button
     donateButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff7c2d12)); // Warm amber/orange
     donateButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfffcd34d)); // Gold
@@ -193,7 +204,21 @@ MainComponent::MainComponent()
             keyDetectorBar->applyKeyToAutoTune(rootNote, scale, songName);
         }
     };
+#if HOSI_PRO_EDITION
+    songbookOverlay->onPlayYouTubeBeat = [this](const juce::String& songName) {
+        showYouTubePlayer(true, songName);
+    };
+#endif
     addChildComponent(songbookOverlay.get());
+
+#if HOSI_PRO_EDITION
+    // YouTube Karaoke Player Overlay (PRO Edition)
+    youtubeOverlay = std::make_unique<YouTubePlayerOverlay>();
+    youtubeOverlay->onCloseClicked = [this]() {
+        showYouTubePlayer(false);
+    };
+    addChildComponent(youtubeOverlay.get());
+#endif
 
     // Restore persistent session state (plugins, custom slots, gain levels, bypass, window size, ui scale)
     presetManager.restoreSessionState();
@@ -345,12 +370,24 @@ void MainComponent::showSettings(bool show)
                 isSongbookOverlayVisible = false;
                 if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
             }
+#if HOSI_PRO_EDITION
+            if (isYouTubeOverlayVisible)
+            {
+                isYouTubeOverlayVisible = false;
+                if (youtubeOverlay != nullptr) youtubeOverlay->setVisible(false);
+            }
+#endif
             settingsOverlay->updateScaleButtonsUI(presetManager.getSavedUiScale());
             settingsOverlay->toFront(true);
         }
     }
 
-    if (!show && wasInCompactModeBeforeOverlay && !isDonateOverlayVisible && !isSongbookOverlayVisible)
+    bool anyOverlayStillOpen = isDonateOverlayVisible || isSongbookOverlayVisible;
+#if HOSI_PRO_EDITION
+    anyOverlayStillOpen = anyOverlayStillOpen || isYouTubeOverlayVisible;
+#endif
+
+    if (!show && wasInCompactModeBeforeOverlay && !anyOverlayStillOpen)
     {
         wasInCompactModeBeforeOverlay = false;
         if (!isCompactMode)
@@ -384,11 +421,23 @@ void MainComponent::showDonate(bool show)
                 isSongbookOverlayVisible = false;
                 if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
             }
+#if HOSI_PRO_EDITION
+            if (isYouTubeOverlayVisible)
+            {
+                isYouTubeOverlayVisible = false;
+                if (youtubeOverlay != nullptr) youtubeOverlay->setVisible(false);
+            }
+#endif
             donateOverlay->toFront(true);
         }
     }
 
-    if (!show && wasInCompactModeBeforeOverlay && !isSettingsOverlayVisible && !isSongbookOverlayVisible)
+    bool anyOverlayStillOpen = isSettingsOverlayVisible || isSongbookOverlayVisible;
+#if HOSI_PRO_EDITION
+    anyOverlayStillOpen = anyOverlayStillOpen || isYouTubeOverlayVisible;
+#endif
+
+    if (!show && wasInCompactModeBeforeOverlay && !anyOverlayStillOpen)
     {
         wasInCompactModeBeforeOverlay = false;
         if (!isCompactMode)
@@ -422,11 +471,23 @@ void MainComponent::showSongbook(bool show)
                 isDonateOverlayVisible = false;
                 if (donateOverlay != nullptr) donateOverlay->setVisible(false);
             }
+#if HOSI_PRO_EDITION
+            if (isYouTubeOverlayVisible)
+            {
+                isYouTubeOverlayVisible = false;
+                if (youtubeOverlay != nullptr) youtubeOverlay->setVisible(false);
+            }
+#endif
             songbookOverlay->toFront(true);
         }
     }
 
-    if (!show && wasInCompactModeBeforeOverlay && !isSettingsOverlayVisible && !isDonateOverlayVisible)
+    bool anyOverlayStillOpen = isSettingsOverlayVisible || isDonateOverlayVisible;
+#if HOSI_PRO_EDITION
+    anyOverlayStillOpen = anyOverlayStillOpen || isYouTubeOverlayVisible;
+#endif
+
+    if (!show && wasInCompactModeBeforeOverlay && !anyOverlayStillOpen)
     {
         wasInCompactModeBeforeOverlay = false;
         if (!isCompactMode)
@@ -435,6 +496,59 @@ void MainComponent::showSongbook(bool show)
 
     resized();
 }
+
+#if HOSI_PRO_EDITION
+void MainComponent::showYouTubePlayer(bool show, const juce::String& initialSongName)
+{
+    if (show && isCompactMode)
+    {
+        wasInCompactModeBeforeOverlay = true;
+        toggleCompactMode();
+    }
+
+    isYouTubeOverlayVisible = show;
+    if (youtubeOverlay != nullptr)
+    {
+        youtubeOverlay->setVisible(show);
+        if (show)
+        {
+            if (isSettingsOverlayVisible)
+            {
+                isSettingsOverlayVisible = false;
+                if (settingsOverlay != nullptr) settingsOverlay->setVisible(false);
+            }
+            if (isDonateOverlayVisible)
+            {
+                isDonateOverlayVisible = false;
+                if (donateOverlay != nullptr) donateOverlay->setVisible(false);
+            }
+            if (isSongbookOverlayVisible)
+            {
+                isSongbookOverlayVisible = false;
+                if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
+            }
+            
+            if (initialSongName.isNotEmpty())
+            {
+                youtubeOverlay->searchAndPlay(initialSongName);
+            }
+
+            youtubeOverlay->toFront(true);
+        }
+    }
+
+    bool anyOverlayStillOpen = isSettingsOverlayVisible || isDonateOverlayVisible || isSongbookOverlayVisible;
+
+    if (!show && wasInCompactModeBeforeOverlay && !anyOverlayStillOpen)
+    {
+        wasInCompactModeBeforeOverlay = false;
+        if (!isCompactMode)
+            toggleCompactMode();
+    }
+
+    resized();
+}
+#endif
 
 void MainComponent::paint(juce::Graphics& g)
 {
@@ -475,6 +589,9 @@ void MainComponent::resized()
     updateCheckButton.setBounds(headerArea.removeFromRight(66).reduced(2));
     donateButton.setBounds(headerArea.removeFromRight(78).reduced(2));
     songbookButton.setBounds(headerArea.removeFromRight(84).reduced(2));
+#if HOSI_PRO_EDITION
+    youtubeButton.setBounds(headerArea.removeFromRight(112).reduced(2));
+#endif
     
     // Quick Preset Scene buttons
     liveSingingPresetBtn.setBounds(headerArea.removeFromLeft(76).reduced(2));
@@ -562,6 +679,12 @@ void MainComponent::resized()
     {
         songbookOverlay->setBounds(getLocalBounds());
     }
+#if HOSI_PRO_EDITION
+    if (youtubeOverlay != nullptr && youtubeOverlay->isVisible())
+    {
+        youtubeOverlay->setBounds(getLocalBounds());
+    }
+#endif
 }
 
 void MainComponent::setRightTab(RightTab tab)
@@ -684,6 +807,13 @@ void MainComponent::toggleCompactMode()
                 isSongbookOverlayVisible = false;
                 if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
             }
+#if HOSI_PRO_EDITION
+            if (isYouTubeOverlayVisible)
+            {
+                isYouTubeOverlayVisible = false;
+                if (youtubeOverlay != nullptr) youtubeOverlay->setVisible(false);
+            }
+#endif
             wasInCompactModeBeforeOverlay = false;
 
             // Entering Streamer Mini-Bar Mode

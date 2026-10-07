@@ -14,13 +14,17 @@ if (Test-Path "Hosi Micro Daw Setup\LiveStream Micro-DAW.exe") {
     Remove-Item "Hosi Micro Daw Setup\LiveStream Micro-DAW.exe" -Force
 }
 
-# Copy documentation
+# Copy documentation and assets
 Copy-Item "README.md" "Hosi Micro Daw\README.md" -Force
 Copy-Item "README_EN.md" "Hosi Micro Daw\README_EN.md" -Force
 Copy-Item "HUONG_DAN_SU_DUNG.txt" "Hosi Micro Daw\HUONG_DAN_SU_DUNG.txt" -Force
 Copy-Item "README.md" "Hosi Micro Daw Setup\README.md" -Force
 Copy-Item "README_EN.md" "Hosi Micro Daw Setup\README_EN.md" -Force
 Copy-Item "HUONG_DAN_SU_DUNG.txt" "Hosi Micro Daw Setup\HUONG_DAN_SU_DUNG.txt" -Force
+
+if (Test-Path "sounds") {
+    Copy-Item "sounds" "Hosi Micro Daw\sounds" -Recurse -Force
+}
 
 Write-Host ">>> [2/4] Building Inno Setup installer..." -ForegroundColor Cyan
 & ".\installer\build_installer.ps1"
@@ -34,8 +38,8 @@ if (Test-Path $winrar) {
     Write-Host "Using WinRAR at: $winrar" -ForegroundColor Green
     if (Test-Path "Hosi Micro Daw Portable.rar") { Remove-Item "Hosi Micro Daw Portable.rar" -Force }
     if (Test-Path "Hosi Micro Daw Setup.rar") { Remove-Item "Hosi Micro Daw Setup.rar" -Force }
-    & "$winrar" a -r -ep1 "Hosi Micro Daw Portable.rar" ".\Hosi Micro Daw\*"
-    & "$winrar" a -r -ep1 "Hosi Micro Daw Setup.rar" ".\Hosi Micro Daw Setup\*"
+    Start-Process -FilePath $winrar -ArgumentList "a -r -ep1 -ibck ""$workspaceDir\Hosi Micro Daw Portable.rar"" ""$workspaceDir\Hosi Micro Daw\*""" -Wait
+    Start-Process -FilePath $winrar -ArgumentList "a -r -ep1 -ibck ""$workspaceDir\Hosi Micro Daw Setup.rar"" ""$workspaceDir\Hosi Micro Daw Setup\*""" -Wait
 }
 
 Write-Host "Generating ZIP archives..." -ForegroundColor Green
@@ -45,4 +49,4 @@ Compress-Archive -Path ".\Hosi Micro Daw\*" -DestinationPath ".\Hosi Micro Daw P
 Compress-Archive -Path ".\Hosi Micro Daw Setup\*" -DestinationPath ".\Hosi Micro Daw Setup.zip" -Force
 
 Write-Host "`n>>> RELEASE PACKAGE SUMMARY:" -ForegroundColor Cyan
-Get-Item "LiveStream Micro-DAW.exe", "LiveStream_Micro_DAW_Setup.exe", "Hosi Micro Daw Portable.zip", "Hosi Micro Daw Setup.zip", "Hosi Micro Daw Portable.rar", "Hosi Micro Daw Setup.rar" | Select-Object Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB,2)}}, LastWriteTime | Format-Table -AutoSize
+Get-Item "LiveStream Micro-DAW.exe", "LiveStream_Micro_DAW_Setup.exe", "Hosi Micro Daw Portable.zip", "Hosi Micro Daw Setup.zip", "Hosi Micro Daw Portable.rar", "Hosi Micro Daw Setup.rar" -ErrorAction SilentlyContinue | Select-Object Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB,2)}}, LastWriteTime | Format-Table -AutoSize
