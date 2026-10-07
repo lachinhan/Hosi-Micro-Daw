@@ -4,7 +4,7 @@
 ; ==============================================================================
 
 #define MyAppName "LiveStream Micro-DAW"
-#define MyAppVersion "2.0.1"
+#define MyAppVersion "2.0.2"
 #define MyAppPublisher "Hosi Studio"
 #define MyAppURL "https://github.com/hosistudio/LiveStreamMicroDAW"
 #define MyAppExeName "LiveStream Micro-DAW.exe"

@@ -11,7 +11,7 @@ public:
     static constexpr const char* UPDATE_URL = "";
     static constexpr const char* FALLBACK_WEB_URL = "https://www.lachinhan.xyz";
 #else
-    static constexpr const char* CURRENT_VERSION = "2.0.1";
+    static constexpr const char* CURRENT_VERSION = "2.0.2";
     static constexpr const char* UPDATE_URL = "https://raw.githubusercontent.com/lachinhan/Hosi-Micro-Daw/main/version.json";
     static constexpr const char* FALLBACK_WEB_URL = "https://www.lachinhan.xyz";
 #endif

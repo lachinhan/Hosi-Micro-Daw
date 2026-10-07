@@ -1,8 +1,8 @@
 {
-  "latest_version": "2.0.1",
+  "latest_version": "2.0.2",
   "release_date": "2026-10-07",
   "download_url": "https://www.lachinhan.xyz",
   "setup_url": "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/LiveStream_Micro_DAW_Setup.exe",
-  "changelog": "• Tự động mở rộng Full Studio khi mở Sổ Tone / Donate từ Mini-Bar và tự thu gọn khi đóng.\n• Hỗ trợ macOS Universal Binary (Apple Silicon M1..M4 & Intel) + Plugin AU/VST3 cho OBS.\n• Sổ Tone 1.033+ bài hát Việt Nam có sẵn Tone Nam / Nữ và Auto-Push vào Auto-Tune.\n• Truyền âm thanh 0ms sang OBS Studio không cần dây cáp ảo."
+  "changelog": "• Nâng cấp Studio Vocal DSP: Tối ưu hoá Noise Gate mượt mà chuẩn Studio với Hold time 35ms & Hysteresis chống ngắt nuốt tiếng.\n• Chuyển đổi Preset tức thì (Instant pop-free preset switching), không bị giật lag hay drop âm thanh.\n• Tối ưu hoá Warm Compressor và Limiter mượt mà, siêu nhẹ, độ trễ 0ms.\n• Tự động mở rộng Full Studio khi mở Sổ Tone / Donate từ Mini-Bar và tự thu gọn khi đóng."
 }
 
