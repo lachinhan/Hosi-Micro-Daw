@@ -104,9 +104,9 @@ YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
         btn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff38bdf8));
         juce::String shiftStr = (shift > 0 ? "+" : "") + juce::String(shift);
         if (shift == 0)
-            btn.setTooltip(juce::String::fromUTF8(u8"Trả Auto-Tune về Tone gốc bài hát (Phím tắt: 0)"));
+            btn.setTooltip(juce::String::fromUTF8(u8"Trả Beat YouTube & Auto-Tune về Tone gốc ban đầu (Phím tắt: 0)"));
         else
-            btn.setTooltip(juce::String::fromUTF8(u8"Chuyển Tone Auto-Tune ") + shiftStr + juce::String::fromUTF8(u8" nửa cung khi bài hát chuyển đoạn/lên tone (Phím tắt: + / -)"));
+            btn.setTooltip(juce::String::fromUTF8(u8"Tăng/Giảm cao độ Beat YouTube ") + shiftStr + juce::String::fromUTF8(u8" nửa cung & đồng bộ Auto-Tune (Phím tắt: + / -)"));
         btn.onClick = [this, shift]() {
             executePitchShift(shift);
         };
@@ -419,12 +419,73 @@ void YouTubePlayerOverlay::executePitchShift(int semitones)
     else
         pitchLabel.setText("TONE: " + transposedKeyName + " (" + shiftText + ")", juce::dontSendNotification);
 
-    // Automatically sync the modulated Key into Auto-Tune without altering original YouTube audio playback
+    // Automatically sync the transposed Tone into Auto-Tune
     if (onApplyTone)
     {
         onApplyTone(transposedRoot, currentBaseScale, 
                     (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [" + transposedKeyName + " (" + shiftText + ")]", 
                     false);
+    }
+
+    // Calculate HTML5 playback rate corresponding to semitone shift
+    // semitone formula: rate = 2^(semitones / 12)
+    float rate = std::pow(2.0f, static_cast<float>(semitones) / 12.0f);
+    
+    // Inject persistent JavaScript pitch shifting hook into YouTube video
+    juce::String jsCode = 
+        "(function() {"
+        "  window.__hosiPitchShift = " + juce::String(semitones) + ";"
+        "  var targetRate = " + juce::String(rate, 4) + ";"
+        "  function applyTone(v) {"
+        "    if (!v) return;"
+        "    try {"
+        "      v.preservesPitch = false;"
+        "      v.mozPreservesPitch = false;"
+        "      v.webkitPreservesPitch = false;"
+        "      if (Math.abs(v.playbackRate - targetRate) > 0.001) {"
+        "        v.playbackRate = targetRate;"
+        "      }"
+        "    } catch(e) {}"
+        "  }"
+        "  document.querySelectorAll('video').forEach(applyTone);"
+        "  if (!window.__hosiToneHookInstalled) {"
+        "    window.__hosiToneHookInstalled = true;"
+        "    ['play', 'playing', 'loadedmetadata', 'timeupdate', 'ratechange'].forEach(function(evt) {"
+        "      document.addEventListener(evt, function(e) {"
+        "        if (e.target && e.target.tagName === 'VIDEO') {"
+        "          var s = window.__hosiPitchShift || 0;"
+        "          var r = Math.pow(2.0, s / 12.0);"
+        "          try {"
+        "            e.target.preservesPitch = false;"
+        "            e.target.mozPreservesPitch = false;"
+        "            e.target.webkitPreservesPitch = false;"
+        "            if (Math.abs(e.target.playbackRate - r) > 0.001) {"
+        "              e.target.playbackRate = r;"
+        "            }"
+        "          } catch(err) {}"
+        "        }"
+        "      }, true);"
+        "    });"
+        "    setInterval(function() {"
+        "      var s = window.__hosiPitchShift || 0;"
+        "      var r = Math.pow(2.0, s / 12.0);"
+        "      document.querySelectorAll('video').forEach(function(v) {"
+        "        try {"
+        "          v.preservesPitch = false;"
+        "          v.mozPreservesPitch = false;"
+        "          v.webkitPreservesPitch = false;"
+        "          if (Math.abs(v.playbackRate - r) > 0.001) {"
+        "            v.playbackRate = r;"
+        "          }"
+        "        } catch(err) {}"
+        "      });"
+        "    }, 600);"
+        "  }"
+        "})();";
+    
+    if (webBrowser != nullptr)
+    {
+        webBrowser->evaluateJavascript(jsCode);
     }
 }
 
