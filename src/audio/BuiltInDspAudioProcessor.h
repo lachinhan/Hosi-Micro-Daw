@@ -28,7 +28,16 @@ public:
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
 
     // --- Noise Gate Controls ---
-    void setGateEnabled(bool enabled) noexcept { gateEnabled.store(enabled, std::memory_order_release); }
+    void setGateEnabled(bool enabled) noexcept
+    {
+        gateEnabled.store(enabled, std::memory_order_release);
+        if (!enabled)
+        {
+            currentGateGain = 1.0f;
+            gateStateOpen = true;
+            gateIsOpen.store(true, std::memory_order_release);
+        }
+    }
     bool isGateEnabled() const noexcept { return gateEnabled.load(std::memory_order_relaxed); }
     void setGateThresholdDb(float threshDb) noexcept { gateThresholdDb.store(threshDb, std::memory_order_release); }
     float getGateThresholdDb() const noexcept { return gateThresholdDb.load(std::memory_order_relaxed); }
@@ -45,7 +54,15 @@ public:
     float getEqHighGainDb() const noexcept { return eqHighGainDb.load(std::memory_order_relaxed); }
 
     // --- Warm Compressor Controls ---
-    void setCompEnabled(bool enabled) noexcept { compEnabled.store(enabled, std::memory_order_release); }
+    void setCompEnabled(bool enabled) noexcept
+    {
+        compEnabled.store(enabled, std::memory_order_release);
+        if (!enabled)
+        {
+            currentCompGain = 1.0f;
+            compGainReductionDb.store(0.0f, std::memory_order_release);
+        }
+    }
     bool isCompEnabled() const noexcept { return compEnabled.load(std::memory_order_relaxed); }
     void setCompThresholdDb(float threshDb) noexcept { compThresholdDb.store(threshDb, std::memory_order_release); }
     float getCompThresholdDb() const noexcept { return compThresholdDb.load(std::memory_order_relaxed); }
@@ -101,17 +118,19 @@ public:
     bool hasEditor() const override { return false; }
 
 private:
-    double currentSampleRate{ 44100.0 };
+    double currentSampleRate{ 48000.0 };
 
     // --- Noise Gate State ---
-    std::atomic<bool> gateEnabled{ true };
+    std::atomic<bool> gateEnabled{ false };
     std::atomic<float> gateThresholdDb{ -48.0f };
-    std::atomic<bool> gateIsOpen{ false };
+    std::atomic<bool> gateIsOpen{ true };
     float gateEnvelope{ 0.0f };
-    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> gateGainSmooth;
+    float currentGateGain{ 1.0f };
+    bool gateStateOpen{ true };
+    int gateHoldSamplesRemaining{ 0 };
 
     // --- EQ Filters ---
-    std::atomic<bool> eqEnabled{ true };
+    std::atomic<bool> eqEnabled{ false };
     std::atomic<float> eqLowGainDb{ 0.0f };
     std::atomic<float> eqMidGainDb{ 2.0f };
     std::atomic<float> eqHighGainDb{ 2.5f };
@@ -124,13 +143,13 @@ private:
     void updateEqCoefficients();
 
     // --- Compressor State ---
-    std::atomic<bool> compEnabled{ true };
+    std::atomic<bool> compEnabled{ false };
     std::atomic<float> compThresholdDb{ -18.0f };
     std::atomic<float> compRatio{ 3.2f };
     std::atomic<float> compMakeupDb{ 2.5f };
     std::atomic<float> compGainReductionDb{ 0.0f };
     float compEnvelope{ 0.0f };
-    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> compGainSmooth;
+    float currentCompGain{ 1.0f };
 
     // --- Reverb ---
     std::atomic<bool> reverbEnabled{ true };

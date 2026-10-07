@@ -16,15 +16,17 @@ void BuiltInDspAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     // Pre-allocate temp reverb buffer to eliminate heap allocation on audio thread
     tempReverbBuffer.setSize(2, std::max(samplesPerBlock, 2048));
 
-    // Noise Gate Smoother
-    gateGainSmooth.reset(currentSampleRate, 0.005); // 5ms ramp
-    gateGainSmooth.setCurrentAndTargetValue(1.0f);
+    // Noise Gate Initial State
+    currentGateGain = 1.0f;
     gateEnvelope = 0.0f;
+    gateStateOpen = true;
+    gateHoldSamplesRemaining = 0;
+    gateIsOpen.store(true, std::memory_order_release);
 
-    // Compressor Smoother
-    compGainSmooth.reset(currentSampleRate, 0.005);
-    compGainSmooth.setCurrentAndTargetValue(1.0f);
+    // Compressor Initial State
+    currentCompGain = 1.0f;
     compEnvelope = 0.0f;
+    compGainReductionDb.store(0.0f, std::memory_order_release);
 
     // EQ Filters Reset
     lowShelfL.reset(); lowShelfR.reset();
@@ -120,16 +122,18 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     float* right = (numChannels > 1) ? buffer.getWritePointer(1) : left;
 
     // -------------------------------------------------------------
-    // 1. NOISE GATE (Fast Attack, Smooth Release & Hysteresis)
+    // 1. NOISE GATE (Fast Attack, Smooth Release, Hysteresis & Hold)
     // -------------------------------------------------------------
     if (hasGate)
     {
         const float threshDb = gateThresholdDb.load(std::memory_order_relaxed);
-        const float threshLin = juce::Decibels::decibelsToGain(threshDb);
-        const float closeThreshLin = threshLin * 0.707f; // Hysteresis (-3 dB lower to close)
+        const float openThreshLin = juce::Decibels::decibelsToGain(threshDb);
+        const float closeThreshLin = openThreshLin * 0.63f; // ~ -4 dB hysteresis
 
-        const float gateAttackAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.002)));
-        const float gateReleaseAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.120)));
+        const float gateAttackAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.0015))); // 1.5ms
+        const float gateReleaseAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.120))); // 120ms
+        const float gateGainAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.006)));    // 6ms ramp
+        const int holdSamples = static_cast<int>(currentSampleRate * 0.035); // 35ms hold time
 
         for (int i = 0; i < numSamples; ++i)
         {
@@ -140,22 +144,42 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
             else
                 gateEnvelope = gateReleaseAlpha * gateEnvelope + (1.0f - gateReleaseAlpha) * inputPeak;
 
-            bool isOpen = (gateEnvelope > closeThreshLin);
-            if (gateEnvelope > threshLin)
-                isOpen = true;
+            if (gateStateOpen)
+            {
+                if (gateEnvelope < closeThreshLin)
+                {
+                    if (gateHoldSamplesRemaining > 0)
+                        --gateHoldSamplesRemaining;
+                    else
+                        gateStateOpen = false;
+                }
+                else
+                {
+                    gateHoldSamplesRemaining = holdSamples;
+                }
+            }
+            else
+            {
+                if (gateEnvelope > openThreshLin)
+                {
+                    gateStateOpen = true;
+                    gateHoldSamplesRemaining = holdSamples;
+                }
+            }
 
-            gateIsOpen.store(isOpen, std::memory_order_relaxed);
+            const float targetGain = gateStateOpen ? 1.0f : 0.0f;
+            currentGateGain = gateGainAlpha * currentGateGain + (1.0f - gateGainAlpha) * targetGain;
 
-            float targetGain = isOpen ? 1.0f : 0.0f;
-            gateGainSmooth.setTargetValue(targetGain);
-
-            const float g = gateGainSmooth.getNextValue();
-            left[i] *= g;
-            right[i] *= g;
+            left[i] *= currentGateGain;
+            right[i] *= currentGateGain;
         }
+
+        gateIsOpen.store(gateStateOpen, std::memory_order_relaxed);
     }
     else
     {
+        currentGateGain = 1.0f;
+        gateStateOpen = true;
         gateIsOpen.store(true, std::memory_order_relaxed);
     }
 
@@ -190,6 +214,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
 
         const float compAttackAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.012))); // 12ms
         const float compReleaseAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.085))); // 85ms
+        const float compGainAlpha = static_cast<float>(std::exp(-1.0 / (currentSampleRate * 0.005)));   // 5ms smooth
 
         float maxReductionDb = 0.0f;
 
@@ -214,21 +239,23 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
             maxReductionDb = std::max(maxReductionDb, gainReductionDb);
 
             const float targetCompGain = juce::Decibels::decibelsToGain(-gainReductionDb) * makeupLin;
-            compGainSmooth.setTargetValue(targetCompGain);
+            currentCompGain = compGainAlpha * currentCompGain + (1.0f - compGainAlpha) * targetCompGain;
 
-            const float cg = compGainSmooth.getNextValue();
-            left[i] *= cg;
-            right[i] *= cg;
+            left[i] *= currentCompGain;
+            right[i] *= currentCompGain;
 
-            // Subtle warm harmonic saturation (soft-knee analog vibe)
-            left[i] = std::tanh(left[i] * 0.95f);
-            right[i] = std::tanh(right[i] * 0.95f);
+            // Smooth cubic warm saturation (mild soft clipping without std::tanh overhead)
+            const float l = left[i] * 0.95f;
+            const float r = right[i] * 0.95f;
+            left[i] = (std::abs(l) < 1.0f) ? (l - (l * l * l * 0.15f)) : (l > 0.0f ? 0.85f : -0.85f);
+            right[i] = (std::abs(r) < 1.0f) ? (r - (r * r * r * 0.15f)) : (r > 0.0f ? 0.85f : -0.85f);
         }
 
         compGainReductionDb.store(maxReductionDb, std::memory_order_relaxed);
     }
     else
     {
+        currentCompGain = 1.0f;
         compGainReductionDb.store(0.0f, std::memory_order_relaxed);
     }
 
@@ -341,6 +368,14 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
 void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
 {
     currentPreset.store(preset, std::memory_order_release);
+
+    // Ensure seamless preset switching without audio cutout
+    currentGateGain = 1.0f;
+    gateStateOpen = true;
+    gateHoldSamplesRemaining = static_cast<int>(currentSampleRate * 0.035);
+    gateIsOpen.store(true, std::memory_order_release);
+    currentCompGain = 1.0f;
+    compGainReductionDb.store(0.0f, std::memory_order_release);
 
     switch (preset)
     {
