@@ -469,7 +469,17 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
         // --- 2. Database scan across 1,033+ Vietnamese songs in SongbookManager ---
         if (!toneFound && songbookManager != nullptr)
         {
-            const juce::String unaccTitle = SongbookManager::removeVietnameseAccents(title).toLowerCase();
+            juce::String cleanTitle = SongbookManager::removeVietnameseAccents(title).toLowerCase();
+            cleanTitle = cleanTitle.replaceCharacter('-', ' ')
+                                   .replaceCharacter('_', ' ')
+                                   .replaceCharacter('|', ' ')
+                                   .replaceCharacter('(', ' ')
+                                   .replaceCharacter(')', ' ')
+                                   .replaceCharacter('[', ' ')
+                                   .replaceCharacter(']', ' ')
+                                   .replaceCharacter(':', ' ')
+                                   .replaceCharacter('/', ' ');
+            const juce::String paddedTitle = " " + cleanTitle + " ";
             const auto& allSongs = songbookManager->getAllSongs();
             
             const SongItem* bestMatch = nullptr;
@@ -477,13 +487,24 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
 
             for (const auto& s : allSongs)
             {
-                const juce::String unaccSong = SongbookManager::removeVietnameseAccents(s.title).toLowerCase().trim();
-                if (unaccSong.length() >= 3 && unaccTitle.contains(unaccSong))
+                juce::String cleanSong = SongbookManager::removeVietnameseAccents(s.title).toLowerCase().trim();
+                cleanSong = cleanSong.replaceCharacter('-', ' ')
+                                     .replaceCharacter('_', ' ')
+                                     .replaceCharacter('|', ' ')
+                                     .replaceCharacter('(', ' ')
+                                     .replaceCharacter(')', ' ')
+                                     .replaceCharacter('[', ' ')
+                                     .replaceCharacter(']', ' ')
+                                     .replaceCharacter(':', ' ')
+                                     .replaceCharacter('/', ' ');
+                const juce::String paddedSong = " " + cleanSong + " ";
+
+                if (cleanSong.length() >= 3 && paddedTitle.contains(paddedSong))
                 {
-                    if (unaccSong.length() > bestMatchLen)
+                    if (cleanSong.length() > bestMatchLen)
                     {
                         bestMatch = &s;
-                        bestMatchLen = unaccSong.length();
+                        bestMatchLen = cleanSong.length();
                     }
                 }
             }
@@ -491,11 +512,11 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
             if (bestMatch != nullptr)
             {
                 songMatchedName = bestMatch->title;
-                if (unaccTitle.contains("nu") || unaccTitle.contains("female"))
+                if (paddedTitle.contains(" nu ") || paddedTitle.contains(" female ") || paddedTitle.contains(" tone nu ") || paddedTitle.contains(" giong nu "))
                 {
                     detectedTone = bestMatch->keyFemale;
                 }
-                else if (unaccTitle.contains("nam") || unaccTitle.contains("male"))
+                else if (paddedTitle.contains(" nam ") || paddedTitle.contains(" male ") || paddedTitle.contains(" tone nam ") || paddedTitle.contains(" giong nam "))
                 {
                     detectedTone = bestMatch->keyMale;
                 }
@@ -522,7 +543,8 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
 
             if (onApplyTone)
             {
-                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + "]", true);
+                // showNotificationPopup = false to avoid duplicate popup
+                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + "]", false);
             }
 
             juce::String alertMsg = juce::String::fromUTF8(u8"✓ Đã tự động nhận diện Tone bài hát từ YouTube:\n\n")

@@ -1,5 +1,29 @@
 [
   {
+    "id": "hao-khi-viet-nam",
+    "title": "Hào Khí Việt Nam",
+    "artist": "Holy Thắng, Phan Đinh Tùng",
+    "composer": "Holy Thắng",
+    "key_original": "Am",
+    "key_male": "Am",
+    "key_female": "Dm",
+    "scale": "Minor",
+    "genre": "Hùng Ca / Quê Hương",
+    "tempo": 110
+  },
+  {
+    "id": "dat-viet-tieng-vong-ngan-doi",
+    "title": "Đất Việt Tiếng Vọng Ngàn Đời",
+    "artist": "Lê Quang, Đan Trường",
+    "composer": "Lê Quang",
+    "key_original": "Am",
+    "key_male": "Am",
+    "key_female": "Dm",
+    "scale": "Minor",
+    "genre": "Hùng Ca / Quê Hương",
+    "tempo": 105
+  },
+  {
     "id": "1-phut",
     "title": "1 phút",
     "artist": "Andiez, Khởi My",
