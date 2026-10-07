@@ -78,12 +78,12 @@ YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
     };
     addAndMakeVisible(refreshButton);
 
-    // Pitch Controls
-    pitchLabel.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+    // Pitch Label for Beat
+    pitchLabel.setFont(juce::FontOptions(11.5f, juce::Font::bold));
     pitchLabel.setColour(juce::Label::textColourId, juce::Colour(0xff38bdf8));
     addAndMakeVisible(pitchLabel);
 
-    // Song Ca / Duet Buttons
+    // Song Ca / Duet Buttons (Chuyển Tone Auto-Tune cho Nam / Nữ)
     maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
     maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff60a5fa));
     maleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Auto-Tune sang Tone Nam (Phím tắt: M hoặc 1)"));
@@ -96,9 +96,35 @@ YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
     femaleToneButton.onClick = [this]() { selectFemaleTone(true); };
     addAndMakeVisible(femaleToneButton);
 
+    // Vocal Auto-Tune Modulation Controls (Lên/Hạ Tone Auto-Tune khi nhạc chuyển tone giữa/cuối bài)
+    vocalModLabel.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+    vocalModLabel.setColour(juce::Label::textColourId, juce::Colour(0xfff59e0b)); // Amber Gold
+    addAndMakeVisible(vocalModLabel);
+
+    auto setupVocalModBtn = [this](juce::TextButton& btn, int shift) {
+        btn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+        btn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfffbbf24));
+        juce::String shiftStr = (shift > 0 ? "+" : "") + juce::String(shift);
+        if (shift == 0)
+            btn.setTooltip(juce::String::fromUTF8(u8"Trả Auto-Tune về Tone gốc của bài hát (Phím tắt: 0)"));
+        else
+            btn.setTooltip(juce::String::fromUTF8(u8"Lên Tone Auto-Tune ") + shiftStr + juce::String::fromUTF8(u8" nửa cung khi bài hát chuyển đoạn/lên tone (Phím tắt: [ hoặc ])"));
+        btn.onClick = [this, shift]() {
+            executeVocalToneModulation(shift);
+        };
+        addAndMakeVisible(btn);
+    };
+
+    setupVocalModBtn(vocalModDown1Btn, -1);
+    setupVocalModBtn(vocalModResetBtn, 0);
+    setupVocalModBtn(vocalModUp1Btn, 1);
+    setupVocalModBtn(vocalModUp2Btn, 2);
+
     updateDuetButtonsUI();
+    updateVocalModButtonsUI();
     setWantsKeyboardFocus(true);
 
+    // Beat Pitch Shifter Buttons (Nâng/hạ Tone Beat YouTube)
     auto setupPitchBtn = [this](juce::TextButton& btn, int shift) {
         btn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
         btn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff38bdf8));
@@ -173,27 +199,36 @@ void YouTubePlayerOverlay::resized()
 
     titleLabel.setBounds(topRow);
 
-    // Header Row 2 (Search Editor + Search Button + Duet Buttons + Pitch Controls)
+    // Header Row 2 (Search + Duet + Vocal Mod + Beat Pitch)
     auto searchRow = bounds.removeFromTop(38).reduced(0, 2);
     
-    // Right side: Pitch buttons (-3, -2, -1, 0, +1, +2, +3)
-    pitchUp3Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchUp2Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchUp1Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchResetBtn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchDown1Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchDown2Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchDown3Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
-    pitchLabel.setBounds(searchRow.removeFromRight(46));
+    // Right Section 1: Beat Pitch Shift Buttons (-3, -2, -1, 0, +1, +2, +3)
+    pitchUp3Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchUp2Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchUp1Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchResetBtn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchDown1Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchDown2Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchDown3Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    pitchLabel.setBounds(searchRow.removeFromRight(42));
 
     searchRow.removeFromRight(4);
 
-    // Duet Male / Female buttons
-    femaleToneButton.setBounds(searchRow.removeFromRight(68).reduced(1));
-    maleToneButton.setBounds(searchRow.removeFromRight(68).reduced(1));
+    // Right Section 2: Vocal Auto-Tune Modulation Buttons (Lên Tone theo bài: -1, 0, +1, +2)
+    vocalModUp2Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    vocalModUp1Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    vocalModResetBtn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    vocalModDown1Btn.setBounds(searchRow.removeFromRight(26).reduced(1));
+    vocalModLabel.setBounds(searchRow.removeFromRight(56));
+
+    searchRow.removeFromRight(4);
+
+    // Center Section: Duet Male / Female buttons
+    femaleToneButton.setBounds(searchRow.removeFromRight(60).reduced(1));
+    maleToneButton.setBounds(searchRow.removeFromRight(60).reduced(1));
 
     searchRow.removeFromRight(6);
-    searchButton.setBounds(searchRow.removeFromRight(84));
+    searchButton.setBounds(searchRow.removeFromRight(80));
     searchRow.removeFromRight(6);
     searchEditor.setBounds(searchRow);
 
@@ -214,7 +249,19 @@ bool YouTubePlayerOverlay::keyPressed(const juce::KeyPress& key)
     auto keyCode = key.getKeyCode();
     auto textChar = key.getTextCharacter();
 
-    // Hotkey +/- or Up/Down arrows to transpose pitch
+    // Hotkey [ / ] to modulate Vocal Auto-Tune Tone when song modulates (+1, +2, -1, 0)
+    if (textChar == ']' || keyCode == juce::KeyPress::pageUpKey)
+    {
+        executeVocalToneModulation(std::clamp(currentVocalModulation + 1, -2, 3));
+        return true;
+    }
+    else if (textChar == '[' || keyCode == juce::KeyPress::pageDownKey)
+    {
+        executeVocalToneModulation(std::clamp(currentVocalModulation - 1, -2, 3));
+        return true;
+    }
+
+    // Hotkey +/- or Up/Down arrows to transpose YouTube Beat pitch (+ Auto-Tune)
     if (textChar == '+' || textChar == '=' || keyCode == juce::KeyPress::upKey)
     {
         executePitchShift(std::clamp(currentPitchShift + 1, -6, 6));
@@ -227,7 +274,10 @@ bool YouTubePlayerOverlay::keyPressed(const juce::KeyPress& key)
     }
     else if (textChar == '0' || keyCode == juce::KeyPress::numberPad0)
     {
-        executePitchShift(0);
+        if (currentVocalModulation != 0)
+            executeVocalToneModulation(0);
+        else
+            executePitchShift(0);
         return true;
     }
     // Hotkey M / 1 to switch Male Tone
@@ -282,6 +332,61 @@ void YouTubePlayerOverlay::updateDuetButtonsUI()
     femaleToneButton.repaint();
 }
 
+void YouTubePlayerOverlay::updateVocalModButtonsUI()
+{
+    auto styleModBtn = [this](juce::TextButton& btn, int val) {
+        bool active = (currentVocalModulation == val);
+        btn.setColour(juce::TextButton::buttonColourId, active ? juce::Colour(0xffd97706) : juce::Colour(0xff1e293b)); // Amber
+        btn.setColour(juce::TextButton::textColourOffId, active ? juce::Colours::white : juce::Colour(0xfffbbf24));
+    };
+
+    styleModBtn(vocalModDown1Btn, -1);
+    styleModBtn(vocalModResetBtn, 0);
+    styleModBtn(vocalModUp1Btn, 1);
+    styleModBtn(vocalModUp2Btn, 2);
+}
+
+void YouTubePlayerOverlay::syncToneToAutoTuneAndUI()
+{
+    int totalShift = currentPitchShift + currentVocalModulation;
+    int effectiveRoot = (currentBaseRootNote + totalShift) % 12;
+    if (effectiveRoot < 0) effectiveRoot += 12;
+
+    const juce::String effectiveKeyName = KeyDetector::formatKeyName(effectiveRoot, currentBaseScale);
+
+    juce::String genderSuffix = (activeGender == ActiveDuetGender::Female) 
+        ? juce::String::fromUTF8(u8" (♀ Nữ)") 
+        : juce::String::fromUTF8(u8" (♂ Nam)");
+
+    juce::String statusText = "TONE: " + effectiveKeyName + genderSuffix;
+    if (currentVocalModulation != 0)
+    {
+        juce::String sign = (currentVocalModulation > 0 ? "+" : "");
+        statusText += " [Mod " + sign + juce::String(currentVocalModulation) + "]";
+    }
+    if (currentPitchShift != 0)
+    {
+        juce::String sign = (currentPitchShift > 0 ? "+" : "") ;
+        statusText += " [Beat " + sign + juce::String(currentPitchShift) + "]";
+    }
+
+    pitchLabel.setText(statusText, juce::dontSendNotification);
+
+    if (onApplyTone)
+    {
+        onApplyTone(effectiveRoot, currentBaseScale, 
+                    (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [" + effectiveKeyName + "]", 
+                    false);
+    }
+}
+
+void YouTubePlayerOverlay::executeVocalToneModulation(int semitones)
+{
+    currentVocalModulation = semitones;
+    updateVocalModButtonsUI();
+    syncToneToAutoTuneAndUI();
+}
+
 void YouTubePlayerOverlay::selectMaleTone(bool announce)
 {
     int root = 0;
@@ -292,16 +397,12 @@ void YouTubePlayerOverlay::selectMaleTone(bool announce)
     currentBaseRootNote = root;
     currentBaseScale = scaleType;
     hasActiveBaseTone = true;
-    currentPitchShift = 0;
+    currentVocalModulation = 0;
     activeGender = ActiveDuetGender::Male;
 
-    pitchLabel.setText("TONE: " + maleTone + juce::String::fromUTF8(u8" (♂ Nam)"), juce::dontSendNotification);
     updateDuetButtonsUI();
-
-    if (onApplyTone)
-    {
-        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + juce::String::fromUTF8(u8" [♂ Nam: ") + maleTone + "]", false);
-    }
+    updateVocalModButtonsUI();
+    syncToneToAutoTuneAndUI();
 }
 
 void YouTubePlayerOverlay::selectFemaleTone(bool announce)
@@ -314,16 +415,12 @@ void YouTubePlayerOverlay::selectFemaleTone(bool announce)
     currentBaseRootNote = root;
     currentBaseScale = scaleType;
     hasActiveBaseTone = true;
-    currentPitchShift = 0;
+    currentVocalModulation = 0;
     activeGender = ActiveDuetGender::Female;
 
-    pitchLabel.setText("TONE: " + femaleTone + juce::String::fromUTF8(u8" (♀ Nữ)"), juce::dontSendNotification);
     updateDuetButtonsUI();
-
-    if (onApplyTone)
-    {
-        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + juce::String::fromUTF8(u8" [♀ Nữ: ") + femaleTone + "]", false);
-    }
+    updateVocalModButtonsUI();
+    syncToneToAutoTuneAndUI();
 }
 
 void YouTubePlayerOverlay::toggleDuetTone()
@@ -406,26 +503,7 @@ void YouTubePlayerOverlay::executePitchShift(int semitones)
     stylePitchBtn(pitchUp2Btn, 2);
     stylePitchBtn(pitchUp3Btn, 3);
 
-    // Calculate transposed root note for Auto-Tune
-    int transposedRoot = (currentBaseRootNote + semitones) % 12;
-    if (transposedRoot < 0) transposedRoot += 12;
-
-    const juce::String transposedKeyName = KeyDetector::formatKeyName(transposedRoot, currentBaseScale);
-    
-    // Update Pitch Label on Toolbar in Realtime
-    juce::String shiftText = (semitones > 0 ? "+" : "") + juce::String(semitones);
-    if (semitones == 0)
-        pitchLabel.setText("TONE: " + transposedKeyName, juce::dontSendNotification);
-    else
-        pitchLabel.setText("TONE: " + transposedKeyName + " (" + shiftText + ")", juce::dontSendNotification);
-
-    // Automatically sync the transposed Tone into Auto-Tune
-    if (onApplyTone)
-    {
-        onApplyTone(transposedRoot, currentBaseScale, 
-                    (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [" + transposedKeyName + " (" + shiftText + ")]", 
-                    false);
-    }
+    syncToneToAutoTuneAndUI();
 
     // Calculate HTML5 playback rate corresponding to semitone shift
     // semitone formula: rate = 2^(semitones / 12)

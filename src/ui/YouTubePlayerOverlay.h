@@ -21,6 +21,7 @@ public:
     void selectMaleTone(bool announce = true);
     void selectFemaleTone(bool announce = true);
     void toggleDuetTone();
+    void executeVocalToneModulation(int semitones);
 
     std::function<void()> onCloseClicked;
     std::function<void()> onDetectAndPushToAutoTune;
@@ -53,6 +54,14 @@ private:
     juce::TextButton maleToneButton{ juce::String::fromUTF8(u8"♂ NAM") };
     juce::TextButton femaleToneButton{ juce::String::fromUTF8(u8"♀ NỮ") };
 
+    // Vocal Auto-Tune Modulation Buttons (Lên Tone Auto-Tune theo nhạc giữa/cuối bài)
+    juce::Label vocalModLabel{ {}, juce::String::fromUTF8(u8"MOD MIC:") };
+    juce::TextButton vocalModDown1Btn{ "-1" };
+    juce::TextButton vocalModResetBtn{ "0" };
+    juce::TextButton vocalModUp1Btn{ "+1" };
+    juce::TextButton vocalModUp2Btn{ "+2" };
+    int currentVocalModulation{ 0 };
+
     // Search Box
     juce::TextEditor searchEditor;
     juce::TextButton searchButton{ juce::String::fromUTF8(u8"🔍 TÌM BEAT") };
@@ -61,8 +70,8 @@ private:
     juce::TextButton cleanModeButton{ juce::String::fromUTF8(u8"🛡️ CHẶN QC / LIVE") };
     juce::TextButton refreshButton{ juce::String::fromUTF8(u8"🔄 TẢI LẠI") };
 
-    // Pitch Shifter Helper Buttons
-    juce::Label pitchLabel{ {}, juce::String::fromUTF8(u8"TONE:") };
+    // Beat Pitch Shifter Helper Buttons (Tăng/giảm cao độ Beat YouTube)
+    juce::Label pitchLabel{ {}, juce::String::fromUTF8(u8"BEAT:") };
     juce::TextButton pitchDown3Btn{ "-3" };
     juce::TextButton pitchDown2Btn{ "-2" };
     juce::TextButton pitchDown1Btn{ "-1" };
@@ -77,6 +86,8 @@ private:
     std::unique_ptr<juce::WebBrowserComponent> webBrowser;
 
     void updateDuetButtonsUI();
+    void updateVocalModButtonsUI();
+    void syncToneToAutoTuneAndUI();
     void executePitchShift(int semitones);
     void injectAdSkipScript();
     void showManualToneMenu();
