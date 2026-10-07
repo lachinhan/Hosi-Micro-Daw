@@ -83,6 +83,22 @@ YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
     pitchLabel.setColour(juce::Label::textColourId, juce::Colour(0xff38bdf8));
     addAndMakeVisible(pitchLabel);
 
+    // Song Ca / Duet Buttons
+    maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff60a5fa));
+    maleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Tone Nam (Phím tắt: M hoặc 1)"));
+    maleToneButton.onClick = [this]() { selectMaleTone(true); };
+    addAndMakeVisible(maleToneButton);
+
+    femaleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    femaleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff472b6));
+    femaleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Tone Nữ (Phím tắt: F hoặc 2)"));
+    femaleToneButton.onClick = [this]() { selectFemaleTone(true); };
+    addAndMakeVisible(femaleToneButton);
+
+    updateDuetButtonsUI();
+    setWantsKeyboardFocus(true);
+
     auto setupPitchBtn = [this](juce::TextButton& btn, int shift) {
         btn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
         btn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff38bdf8));
@@ -152,21 +168,27 @@ void YouTubePlayerOverlay::resized()
 
     titleLabel.setBounds(topRow);
 
-    // Header Row 2 (Search Editor + Search Button + Pitch Controls)
+    // Header Row 2 (Search Editor + Search Button + Duet Buttons + Pitch Controls)
     auto searchRow = bounds.removeFromTop(38).reduced(0, 2);
     
     // Right side: Pitch buttons (-3, -2, -1, 0, +1, +2, +3)
-    pitchUp3Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchUp2Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchUp1Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchResetBtn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchDown1Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchDown2Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchDown3Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
-    pitchLabel.setBounds(searchRow.removeFromRight(44));
+    pitchUp3Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchUp2Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchUp1Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchResetBtn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchDown1Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchDown2Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchDown3Btn.setBounds(searchRow.removeFromRight(27).reduced(1));
+    pitchLabel.setBounds(searchRow.removeFromRight(46));
+
+    searchRow.removeFromRight(4);
+
+    // Duet Male / Female buttons
+    femaleToneButton.setBounds(searchRow.removeFromRight(68).reduced(1));
+    maleToneButton.setBounds(searchRow.removeFromRight(68).reduced(1));
 
     searchRow.removeFromRight(6);
-    searchButton.setBounds(searchRow.removeFromRight(90));
+    searchButton.setBounds(searchRow.removeFromRight(84));
     searchRow.removeFromRight(6);
     searchEditor.setBounds(searchRow);
 
@@ -177,6 +199,134 @@ void YouTubePlayerOverlay::resized()
     {
         webBrowser->setBounds(bounds);
     }
+}
+
+bool YouTubePlayerOverlay::keyPressed(const juce::KeyPress& key)
+{
+    if (searchEditor.hasKeyboardFocus(true))
+        return false;
+
+    auto keyCode = key.getKeyCode();
+    auto textChar = key.getTextCharacter();
+
+    // Hotkey +/- or Up/Down arrows to transpose pitch
+    if (textChar == '+' || textChar == '=' || keyCode == juce::KeyPress::upKey)
+    {
+        executePitchShift(std::clamp(currentPitchShift + 1, -6, 6));
+        return true;
+    }
+    else if (textChar == '-' || textChar == '_' || keyCode == juce::KeyPress::downKey)
+    {
+        executePitchShift(std::clamp(currentPitchShift - 1, -6, 6));
+        return true;
+    }
+    else if (textChar == '0' || keyCode == juce::KeyPress::numberPad0)
+    {
+        executePitchShift(0);
+        return true;
+    }
+    // Hotkey M / 1 to switch Male Tone
+    else if (textChar == 'm' || textChar == 'M' || textChar == '1' || keyCode == juce::KeyPress::numberPad1)
+    {
+        selectMaleTone(true);
+        return true;
+    }
+    // Hotkey F / 2 to switch Female Tone
+    else if (textChar == 'f' || textChar == 'F' || textChar == '2' || keyCode == juce::KeyPress::numberPad2)
+    {
+        selectFemaleTone(true);
+        return true;
+    }
+    // Hotkey D / Tab to toggle duet tone
+    else if (textChar == 'd' || textChar == 'D' || keyCode == juce::KeyPress::tabKey)
+    {
+        toggleDuetTone();
+        return true;
+    }
+
+    return false;
+}
+
+void YouTubePlayerOverlay::updateDuetButtonsUI()
+{
+    maleToneButton.setButtonText(juce::String::fromUTF8(u8"♂ ") + maleTone);
+    femaleToneButton.setButtonText(juce::String::fromUTF8(u8"♀ ") + femaleTone);
+
+    if (activeGender == ActiveDuetGender::Male)
+    {
+        maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff2563eb)); // Bright Royal Blue
+        maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+        femaleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b)); // Slate
+        femaleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff472b6)); // Pink text
+    }
+    else if (activeGender == ActiveDuetGender::Female)
+    {
+        femaleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xffdb2777)); // Vibrant Magenta / Rose
+        femaleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+        maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b)); // Slate
+        maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff60a5fa)); // Blue text
+    }
+    else
+    {
+        maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+        maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff60a5fa));
+        femaleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+        femaleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff472b6));
+    }
+    maleToneButton.repaint();
+    femaleToneButton.repaint();
+}
+
+void YouTubePlayerOverlay::selectMaleTone(bool announce)
+{
+    int root = 0;
+    bool isMinor = false;
+    SongbookManager::parseKeyAndScale(maleTone, root, isMinor);
+    auto scaleType = isMinor ? KeyDetector::ScaleType::Minor : KeyDetector::ScaleType::Major;
+
+    currentBaseRootNote = root;
+    currentBaseScale = scaleType;
+    hasActiveBaseTone = true;
+    currentPitchShift = 0;
+    activeGender = ActiveDuetGender::Male;
+
+    pitchLabel.setText("TONE: " + maleTone + " (♂ Nam)", juce::dontSendNotification);
+    updateDuetButtonsUI();
+
+    if (onApplyTone)
+    {
+        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [♂ Nam: " + maleTone + "]", false);
+    }
+}
+
+void YouTubePlayerOverlay::selectFemaleTone(bool announce)
+{
+    int root = 0;
+    bool isMinor = false;
+    SongbookManager::parseKeyAndScale(femaleTone, root, isMinor);
+    auto scaleType = isMinor ? KeyDetector::ScaleType::Minor : KeyDetector::ScaleType::Major;
+
+    currentBaseRootNote = root;
+    currentBaseScale = scaleType;
+    hasActiveBaseTone = true;
+    currentPitchShift = 0;
+    activeGender = ActiveDuetGender::Female;
+
+    pitchLabel.setText("TONE: " + femaleTone + " (♀ Nữ)", juce::dontSendNotification);
+    updateDuetButtonsUI();
+
+    if (onApplyTone)
+    {
+        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [♀ Nữ: " + femaleTone + "]", false);
+    }
+}
+
+void YouTubePlayerOverlay::toggleDuetTone()
+{
+    if (activeGender == ActiveDuetGender::Male)
+        selectFemaleTone(true);
+    else
+        selectMaleTone(true);
 }
 
 void YouTubePlayerOverlay::textEditorReturnKeyPressed(juce::TextEditor& editor)
@@ -193,6 +343,24 @@ void YouTubePlayerOverlay::searchAndPlay(const juce::String& songName)
         return;
 
     searchEditor.setText(songName, juce::dontSendNotification);
+
+    if (songbookManager != nullptr)
+    {
+        juce::String cleanSearch = SongbookManager::removeVietnameseAccents(songName).toLowerCase().trim();
+        const auto& allSongs = songbookManager->getAllSongs();
+        for (const auto& s : allSongs)
+        {
+            juce::String cleanS = SongbookManager::removeVietnameseAccents(s.title).toLowerCase().trim();
+            if (cleanSearch == cleanS || cleanSearch.contains(cleanS) || cleanS.contains(cleanSearch))
+            {
+                activeSongName = s.title;
+                maleTone = s.keyMale.isNotEmpty() ? s.keyMale : "Am";
+                femaleTone = s.keyFemale.isNotEmpty() ? s.keyFemale : "Dm";
+                updateDuetButtonsUI();
+                break;
+            }
+        }
+    }
 
     juce::String query = songName;
     if (!query.containsIgnoreCase("karaoke") && !query.containsIgnoreCase("beat"))
@@ -512,19 +680,40 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
             if (bestMatch != nullptr)
             {
                 songMatchedName = bestMatch->title;
+                maleTone = bestMatch->keyMale.isNotEmpty() ? bestMatch->keyMale : "Am";
+                femaleTone = bestMatch->keyFemale.isNotEmpty() ? bestMatch->keyFemale : "Dm";
+
                 if (paddedTitle.contains(" nu ") || paddedTitle.contains(" female ") || paddedTitle.contains(" tone nu ") || paddedTitle.contains(" giong nu "))
                 {
-                    detectedTone = bestMatch->keyFemale;
+                    detectedTone = femaleTone;
+                    activeGender = ActiveDuetGender::Female;
                 }
                 else if (paddedTitle.contains(" nam ") || paddedTitle.contains(" male ") || paddedTitle.contains(" tone nam ") || paddedTitle.contains(" giong nam "))
                 {
-                    detectedTone = bestMatch->keyMale;
+                    detectedTone = maleTone;
+                    activeGender = ActiveDuetGender::Male;
                 }
                 else
                 {
                     detectedTone = bestMatch->getEffectiveTone();
+                    activeGender = (detectedTone.equalsIgnoreCase(femaleTone) && !femaleTone.equalsIgnoreCase(maleTone)) ? ActiveDuetGender::Female : ActiveDuetGender::Male;
                 }
                 toneFound = true;
+            }
+            else if (detectedTone.isNotEmpty())
+            {
+                if (paddedTitle.contains(" nu ") || paddedTitle.contains(" female ") || paddedTitle.contains(" tone nu ") || paddedTitle.contains(" giong nu "))
+                {
+                    femaleTone = detectedTone;
+                    maleTone = SongbookManager::transposeKey(detectedTone, -5);
+                    activeGender = ActiveDuetGender::Female;
+                }
+                else
+                {
+                    maleTone = detectedTone;
+                    femaleTone = SongbookManager::transposeKey(detectedTone, 5);
+                    activeGender = ActiveDuetGender::Male;
+                }
             }
         }
 
@@ -539,17 +728,25 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
             hasActiveBaseTone = true;
             activeSongName = songMatchedName;
             currentPitchShift = 0;
-            pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(rootNote, scaleType), juce::dontSendNotification);
+
+            juce::String genderSuffix = (activeGender == ActiveDuetGender::Female) ? " (♀ Nữ)" : " (♂ Nam)";
+            pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(rootNote, scaleType) + genderSuffix, juce::dontSendNotification);
+            updateDuetButtonsUI();
 
             if (onApplyTone)
             {
                 // showNotificationPopup = false to avoid duplicate popup
-                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + "]", false);
+                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + genderSuffix + "]", false);
             }
 
             juce::String alertMsg = juce::String::fromUTF8(u8"✓ Đã tự động nhận diện Tone bài hát từ YouTube:\n\n")
                                   + juce::String::fromUTF8(u8"• Bài hát / Video: ") + songMatchedName + "\n"
-                                  + juce::String::fromUTF8(u8"• Tone phát hiện: [") + detectedTone + (isMinor ? " (Thứ)]\n" : " (Trưởng)]\n")
+                                  + juce::String::fromUTF8(u8"• Tone hiện tại: [") + detectedTone + (isMinor ? " (Thứ)" : " (Trưởng)") + genderSuffix + "]\n"
+                                  + juce::String::fromUTF8(u8"• Song Ca Nam/Nữ: [♂ Nam: ") + maleTone + juce::String::fromUTF8(u8" | ♀ Nữ: ") + femaleTone + "]\n\n"
+                                  + juce::String::fromUTF8(u8"💡 Phím tắt nhanh khi hát:\n")
+                                  + juce::String::fromUTF8(u8"  • Phím M hoặc 1: Chuyển sang Tone Nam\n")
+                                  + juce::String::fromUTF8(u8"  • Phím F hoặc 2: Chuyển sang Tone Nữ\n")
+                                  + juce::String::fromUTF8(u8"  • Phím + / - : Tăng / Giảm Tone khi lên giọng\n")
                                   + juce::String::fromUTF8(u8"• Đã tự động nạp thành công vào Auto-Tune trong Rack!");
 
             juce::AlertWindow::showMessageBoxAsync(

@@ -1,4 +1,5 @@
 #include "SongbookManager.h"
+#include "../audio/KeyDetector.h"
 #include <BinaryData.h>
 
 SongbookManager::SongbookManager()
@@ -467,4 +468,15 @@ void SongbookManager::parseKeyAndScale(const juce::String& toneStr, int& outRoot
     else if (clean == "A") outRootNote = 9;
     else if (clean == "A#" || clean == "BB") outRootNote = 10;
     else if (clean == "B") outRootNote = 11;
+}
+
+juce::String SongbookManager::transposeKey(const juce::String& toneStr, int semitoneShift)
+{
+    int root = 0;
+    bool isMinor = false;
+    parseKeyAndScale(toneStr, root, isMinor);
+    int newRoot = (root + semitoneShift) % 12;
+    if (newRoot < 0) newRoot += 12;
+    juce::String note = KeyDetector::getNoteName(newRoot);
+    return isMinor ? (note + "m") : note;
 }

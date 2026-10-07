@@ -13,9 +13,14 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
     void textEditorReturnKeyPressed(juce::TextEditor& editor) override;
+    bool keyPressed(const juce::KeyPress& key) override;
 
     void searchAndPlay(const juce::String& songName);
     void loadUrl(const juce::String& url);
+
+    void selectMaleTone(bool announce = true);
+    void selectFemaleTone(bool announce = true);
+    void toggleDuetTone();
 
     std::function<void()> onCloseClicked;
     std::function<void()> onDetectAndPushToAutoTune;
@@ -33,10 +38,20 @@ private:
     bool hasActiveBaseTone{ false };
     juce::String activeSongName{ "" };
 
+    // Duet Male / Female Tone Tracking
+    juce::String maleTone{ "Am" };
+    juce::String femaleTone{ "Dm" };
+    enum class ActiveDuetGender { None, Male, Female };
+    ActiveDuetGender activeGender{ ActiveDuetGender::None };
+
     // Tone & Auto-Tune Direct Controls
     juce::TextButton detectKeyButton{ juce::String::fromUTF8(u8"🎯 DÒ TONE (AUTO-KEY)") };
     juce::TextButton manualToneButton{ juce::String::fromUTF8(u8"⚡ NẠP AUTO-TUNE") };
     juce::TextButton songbookQuickButton{ juce::String::fromUTF8(u8"🎵 SỔ TONE") };
+
+    // Song Ca / Duet Switcher Buttons
+    juce::TextButton maleToneButton{ juce::String::fromUTF8(u8"♂ NAM") };
+    juce::TextButton femaleToneButton{ juce::String::fromUTF8(u8"♀ NỮ") };
 
     // Search Box
     juce::TextEditor searchEditor;
@@ -61,6 +76,7 @@ private:
     // Native Web View Browser Component
     std::unique_ptr<juce::WebBrowserComponent> webBrowser;
 
+    void updateDuetButtonsUI();
     void executePitchShift(int semitones);
     void injectAdSkipScript();
     void showManualToneMenu();

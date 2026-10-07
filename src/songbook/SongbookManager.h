@@ -118,6 +118,7 @@ public:
 
     static juce::String removeVietnameseAccents(const juce::String& input);
     static void parseKeyAndScale(const juce::String& toneStr, int& outRootNote, bool& outIsMinor);
+    static juce::String transposeKey(const juce::String& toneStr, int semitoneShift);
 
     std::function<void()> onDatabaseChanged;
 
