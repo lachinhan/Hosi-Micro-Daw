@@ -159,6 +159,7 @@ private:
     bool isSongbookOverlayVisible{ false };
 
     bool isCompactMode{ false };
+    bool wasInCompactModeBeforeOverlay{ false };
     bool isAlwaysOnTop{ false };
     int previousFullWidth{ 1140 };
     int previousFullHeight{ 760 };

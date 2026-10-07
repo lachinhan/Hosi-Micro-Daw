@@ -323,6 +323,12 @@ void MainComponent::updatePresetButtonsUI()
 
 void MainComponent::showSettings(bool show)
 {
+    if (show && isCompactMode)
+    {
+        wasInCompactModeBeforeOverlay = true;
+        toggleCompactMode();
+    }
+
     isSettingsOverlayVisible = show;
     if (settingsOverlay != nullptr)
     {
@@ -330,18 +336,38 @@ void MainComponent::showSettings(bool show)
         if (show)
         {
             if (isDonateOverlayVisible)
-                showDonate(false);
+            {
+                isDonateOverlayVisible = false;
+                if (donateOverlay != nullptr) donateOverlay->setVisible(false);
+            }
             if (isSongbookOverlayVisible)
-                showSongbook(false);
+            {
+                isSongbookOverlayVisible = false;
+                if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
+            }
             settingsOverlay->updateScaleButtonsUI(presetManager.getSavedUiScale());
             settingsOverlay->toFront(true);
         }
     }
+
+    if (!show && wasInCompactModeBeforeOverlay && !isDonateOverlayVisible && !isSongbookOverlayVisible)
+    {
+        wasInCompactModeBeforeOverlay = false;
+        if (!isCompactMode)
+            toggleCompactMode();
+    }
+
     resized();
 }
 
 void MainComponent::showDonate(bool show)
 {
+    if (show && isCompactMode)
+    {
+        wasInCompactModeBeforeOverlay = true;
+        toggleCompactMode();
+    }
+
     isDonateOverlayVisible = show;
     if (donateOverlay != nullptr)
     {
@@ -349,17 +375,37 @@ void MainComponent::showDonate(bool show)
         if (show)
         {
             if (isSettingsOverlayVisible)
-                showSettings(false);
+            {
+                isSettingsOverlayVisible = false;
+                if (settingsOverlay != nullptr) settingsOverlay->setVisible(false);
+            }
             if (isSongbookOverlayVisible)
-                showSongbook(false);
+            {
+                isSongbookOverlayVisible = false;
+                if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
+            }
             donateOverlay->toFront(true);
         }
     }
+
+    if (!show && wasInCompactModeBeforeOverlay && !isSettingsOverlayVisible && !isSongbookOverlayVisible)
+    {
+        wasInCompactModeBeforeOverlay = false;
+        if (!isCompactMode)
+            toggleCompactMode();
+    }
+
     resized();
 }
 
 void MainComponent::showSongbook(bool show)
 {
+    if (show && isCompactMode)
+    {
+        wasInCompactModeBeforeOverlay = true;
+        toggleCompactMode();
+    }
+
     isSongbookOverlayVisible = show;
     if (songbookOverlay != nullptr)
     {
@@ -367,12 +413,26 @@ void MainComponent::showSongbook(bool show)
         if (show)
         {
             if (isSettingsOverlayVisible)
-                showSettings(false);
+            {
+                isSettingsOverlayVisible = false;
+                if (settingsOverlay != nullptr) settingsOverlay->setVisible(false);
+            }
             if (isDonateOverlayVisible)
-                showDonate(false);
+            {
+                isDonateOverlayVisible = false;
+                if (donateOverlay != nullptr) donateOverlay->setVisible(false);
+            }
             songbookOverlay->toFront(true);
         }
     }
+
+    if (!show && wasInCompactModeBeforeOverlay && !isSettingsOverlayVisible && !isDonateOverlayVisible)
+    {
+        wasInCompactModeBeforeOverlay = false;
+        if (!isCompactMode)
+            toggleCompactMode();
+    }
+
     resized();
 }
 
@@ -608,6 +668,24 @@ void MainComponent::toggleCompactMode()
 
         if (isCompactMode)
         {
+            // Close any active overlays before entering compact mode
+            if (isSettingsOverlayVisible)
+            {
+                isSettingsOverlayVisible = false;
+                if (settingsOverlay != nullptr) settingsOverlay->setVisible(false);
+            }
+            if (isDonateOverlayVisible)
+            {
+                isDonateOverlayVisible = false;
+                if (donateOverlay != nullptr) donateOverlay->setVisible(false);
+            }
+            if (isSongbookOverlayVisible)
+            {
+                isSongbookOverlayVisible = false;
+                if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
+            }
+            wasInCompactModeBeforeOverlay = false;
+
             // Entering Streamer Mini-Bar Mode
             previousFullWidth = std::max(1000, dw->getWidth());
             previousFullHeight = std::max(600, dw->getHeight());
@@ -618,11 +696,14 @@ void MainComponent::toggleCompactMode()
             if (keyDetectorBar != nullptr)
                 keyDetectorBar->setVisible(false);
             masterTabButton.setVisible(false);
+            vocalDspTabButton.setVisible(false);
             soundboardTabButton.setVisible(false);
             if (verticalRack != nullptr)
                 verticalRack->setVisible(false);
             if (masterStrip != nullptr)
                 masterStrip->setVisible(false);
+            if (builtInDspPanel != nullptr)
+                builtInDspPanel->setVisible(false);
             if (soundboardPanel != nullptr)
                 soundboardPanel->setVisible(false);
 
