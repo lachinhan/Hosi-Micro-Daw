@@ -6,12 +6,15 @@ BuiltInDspAudioProcessor::BuiltInDspAudioProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                       .withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
-    loadPreset(VocalPreset::LiveSinging);
+    loadPreset(VocalPreset::BypassAll);
 }
 
 void BuiltInDspAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = (sampleRate > 8000.0) ? sampleRate : 44100.0;
+
+    // Pre-allocate temp reverb buffer to eliminate heap allocation on audio thread
+    tempReverbBuffer.setSize(2, std::max(samplesPerBlock, 2048));
 
     // Noise Gate Smoother
     gateGainSmooth.reset(currentSampleRate, 0.005); // 5ms ramp
@@ -49,6 +52,7 @@ void BuiltInDspAudioProcessor::releaseResources()
 {
     reverbProcessor.reset();
     delayBuffer.setSize(0, 0);
+    tempReverbBuffer.setSize(0, 0);
 }
 
 void BuiltInDspAudioProcessor::updateEqCoefficients()
@@ -95,8 +99,19 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     if (numSamples <= 0 || numChannels <= 0)
         return;
 
+    const bool hasGate = gateEnabled.load(std::memory_order_relaxed);
+    const bool hasEq = eqEnabled.load(std::memory_order_relaxed);
+    const bool hasComp = compEnabled.load(std::memory_order_relaxed);
+    const bool hasDelay = delayEnabled.load(std::memory_order_relaxed);
+    const bool hasReverb = reverbEnabled.load(std::memory_order_relaxed);
+    const bool hasLimiter = limiterEnabled.load(std::memory_order_relaxed);
+
+    // If completely bypassed, return immediately with 0 overhead
+    if (!hasGate && !hasEq && !hasComp && !hasDelay && !hasReverb && !hasLimiter)
+        return;
+
     // Check EQ coefficient updates
-    if (needEqUpdate.load(std::memory_order_relaxed))
+    if (hasEq && needEqUpdate.load(std::memory_order_relaxed))
     {
         updateEqCoefficients();
     }
@@ -107,7 +122,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     // -------------------------------------------------------------
     // 1. NOISE GATE (Fast Attack, Smooth Release & Hysteresis)
     // -------------------------------------------------------------
-    if (gateEnabled.load(std::memory_order_relaxed))
+    if (hasGate)
     {
         const float threshDb = gateThresholdDb.load(std::memory_order_relaxed);
         const float threshLin = juce::Decibels::decibelsToGain(threshDb);
@@ -265,28 +280,24 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     // -------------------------------------------------------------
     // 5. LUSH STUDIO REVERB (Stereo Plate / Chamber Space)
     // -------------------------------------------------------------
-    if (reverbEnabled.load(std::memory_order_relaxed))
+    if (hasReverb)
     {
         const float wet = reverbWetMix.load(std::memory_order_relaxed);
 
         if (numChannels >= 2)
         {
-            // Copy dry buffer to process wet reverb
-            float* lChan = left;
-            float* rChan = right;
+            if (tempReverbBuffer.getNumSamples() < numSamples)
+                tempReverbBuffer.setSize(2, numSamples, false, false, true);
 
-            // JUCE reverb processes in place
-            // We use temp buffer for wet addition
-            juce::AudioBuffer<float> tempReverb(2, numSamples);
-            tempReverb.copyFrom(0, 0, left, numSamples);
-            tempReverb.copyFrom(1, 0, right, numSamples);
+            tempReverbBuffer.copyFrom(0, 0, left, numSamples);
+            tempReverbBuffer.copyFrom(1, 0, right, numSamples);
 
-            reverbProcessor.processStereo(tempReverb.getWritePointer(0), tempReverb.getWritePointer(1), numSamples);
+            reverbProcessor.processStereo(tempReverbBuffer.getWritePointer(0), tempReverbBuffer.getWritePointer(1), numSamples);
 
             for (int i = 0; i < numSamples; ++i)
             {
-                left[i] = left[i] * (1.0f - wet * 0.4f) + tempReverb.getSample(0, i) * wet;
-                right[i] = right[i] * (1.0f - wet * 0.4f) + tempReverb.getSample(1, i) * wet;
+                left[i] = left[i] * (1.0f - wet * 0.4f) + tempReverbBuffer.getSample(0, i) * wet;
+                right[i] = right[i] * (1.0f - wet * 0.4f) + tempReverbBuffer.getSample(1, i) * wet;
             }
         }
         else
@@ -298,7 +309,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     // -------------------------------------------------------------
     // 6. BRICKWALL PEAK LIMITER (-0.3 dBFS Anti-Clipping)
     // -------------------------------------------------------------
-    if (limiterEnabled.load(std::memory_order_relaxed))
+    if (hasLimiter)
     {
         const float threshDb = limiterThresholdDb.load(std::memory_order_relaxed);
         const float ceilingLin = juce::Decibels::decibelsToGain(threshDb);

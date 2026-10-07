@@ -34,6 +34,16 @@ void AudioEngine::initialize()
     }
     else
     {
+#if JUCE_WINDOWS
+        for (auto* type : deviceManager.getAvailableDeviceTypes())
+        {
+            if (type->getTypeName().containsIgnoreCase("ASIO"))
+            {
+                deviceManager.setCurrentAudioDeviceType("ASIO", true);
+                break;
+            }
+        }
+#endif
         // First run default low-latency setup
         juce::AudioDeviceManager::AudioDeviceSetup setup;
         deviceManager.getAudioDeviceSetup(setup);

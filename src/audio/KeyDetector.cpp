@@ -100,6 +100,9 @@ void KeyDetector::initializePitchLookup(double sampleRate)
 
 void KeyDetector::processBlock(const juce::AudioBuffer<float>& buffer)
 {
+    if (keyLocked)
+        return;
+
     const int numSamples = buffer.getNumSamples();
     const int numChannels = buffer.getNumChannels();
     if (numSamples <= 0 || numChannels <= 0)

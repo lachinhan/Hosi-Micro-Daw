@@ -139,6 +139,7 @@ private:
     std::atomic<float> reverbWetMix{ 0.22f };
     juce::Reverb reverbProcessor;
     juce::Reverb::Parameters reverbParams;
+    juce::AudioBuffer<float> tempReverbBuffer;
     void updateReverbParams();
 
     // --- Delay ---
@@ -152,11 +153,11 @@ private:
     float delayLowPassR{ 0.0f };
 
     // --- Limiter ---
-    std::atomic<bool> limiterEnabled{ true };
+    std::atomic<bool> limiterEnabled{ false };
     std::atomic<float> limiterThresholdDb{ -0.5f };
     float limiterPeakEnv{ 0.0f };
 
-    std::atomic<VocalPreset> currentPreset{ VocalPreset::LiveSinging };
+    std::atomic<VocalPreset> currentPreset{ VocalPreset::BypassAll };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BuiltInDspAudioProcessor)
 };
