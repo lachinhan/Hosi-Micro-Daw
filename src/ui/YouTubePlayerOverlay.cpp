@@ -86,13 +86,13 @@ YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
     // Song Ca / Duet Buttons
     maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
     maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff60a5fa));
-    maleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Tone Nam (Phím tắt: M hoặc 1)"));
+    maleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Auto-Tune sang Tone Nam (Phím tắt: M hoặc 1)"));
     maleToneButton.onClick = [this]() { selectMaleTone(true); };
     addAndMakeVisible(maleToneButton);
 
     femaleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
     femaleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff472b6));
-    femaleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Tone Nữ (Phím tắt: F hoặc 2)"));
+    femaleToneButton.setTooltip(juce::String::fromUTF8(u8"Chuyển Auto-Tune sang Tone Nữ (Phím tắt: F hoặc 2)"));
     femaleToneButton.onClick = [this]() { selectFemaleTone(true); };
     addAndMakeVisible(femaleToneButton);
 
@@ -102,6 +102,11 @@ YouTubePlayerOverlay::YouTubePlayerOverlay(SongbookManager* songbookMgr)
     auto setupPitchBtn = [this](juce::TextButton& btn, int shift) {
         btn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
         btn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff38bdf8));
+        juce::String shiftStr = (shift > 0 ? "+" : "") + juce::String(shift);
+        if (shift == 0)
+            btn.setTooltip(juce::String::fromUTF8(u8"Trả Auto-Tune về Tone gốc bài hát (Phím tắt: 0)"));
+        else
+            btn.setTooltip(juce::String::fromUTF8(u8"Chuyển Tone Auto-Tune ") + shiftStr + juce::String::fromUTF8(u8" nửa cung khi bài hát chuyển đoạn/lên tone (Phím tắt: + / -)"));
         btn.onClick = [this, shift]() {
             executePitchShift(shift);
         };
@@ -290,12 +295,12 @@ void YouTubePlayerOverlay::selectMaleTone(bool announce)
     currentPitchShift = 0;
     activeGender = ActiveDuetGender::Male;
 
-    pitchLabel.setText("TONE: " + maleTone + " (♂ Nam)", juce::dontSendNotification);
+    pitchLabel.setText("TONE: " + maleTone + juce::String::fromUTF8(u8" (♂ Nam)"), juce::dontSendNotification);
     updateDuetButtonsUI();
 
     if (onApplyTone)
     {
-        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [♂ Nam: " + maleTone + "]", false);
+        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + juce::String::fromUTF8(u8" [♂ Nam: ") + maleTone + "]", false);
     }
 }
 
@@ -312,12 +317,12 @@ void YouTubePlayerOverlay::selectFemaleTone(bool announce)
     currentPitchShift = 0;
     activeGender = ActiveDuetGender::Female;
 
-    pitchLabel.setText("TONE: " + femaleTone + " (♀ Nữ)", juce::dontSendNotification);
+    pitchLabel.setText("TONE: " + femaleTone + juce::String::fromUTF8(u8" (♀ Nữ)"), juce::dontSendNotification);
     updateDuetButtonsUI();
 
     if (onApplyTone)
     {
-        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [♀ Nữ: " + femaleTone + "]", false);
+        onApplyTone(root, scaleType, (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + juce::String::fromUTF8(u8" [♀ Nữ: ") + femaleTone + "]", false);
     }
 }
 
@@ -414,73 +419,12 @@ void YouTubePlayerOverlay::executePitchShift(int semitones)
     else
         pitchLabel.setText("TONE: " + transposedKeyName + " (" + shiftText + ")", juce::dontSendNotification);
 
-    // Automatically sync the transposed Tone into Auto-Tune without blocking popup
+    // Automatically sync the modulated Key into Auto-Tune without altering original YouTube audio playback
     if (onApplyTone)
     {
         onApplyTone(transposedRoot, currentBaseScale, 
                     (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [" + transposedKeyName + " (" + shiftText + ")]", 
                     false);
-    }
-
-    // Calculate HTML5 playback rate corresponding to semitone shift
-    // semitone formula: rate = 2^(semitones / 12)
-    float rate = std::pow(2.0f, static_cast<float>(semitones) / 12.0f);
-    
-    // Inject persistent JavaScript pitch shifting hook
-    juce::String jsCode = 
-        "(function() {"
-        "  window.__hosiPitchShift = " + juce::String(semitones) + ";"
-        "  var targetRate = " + juce::String(rate, 4) + ";"
-        "  function applyTone(v) {"
-        "    if (!v) return;"
-        "    try {"
-        "      v.preservesPitch = false;"
-        "      v.mozPreservesPitch = false;"
-        "      v.webkitPreservesPitch = false;"
-        "      if (Math.abs(v.playbackRate - targetRate) > 0.001) {"
-        "        v.playbackRate = targetRate;"
-        "      }"
-        "    } catch(e) {}"
-        "  }"
-        "  document.querySelectorAll('video').forEach(applyTone);"
-        "  if (!window.__hosiToneHookInstalled) {"
-        "    window.__hosiToneHookInstalled = true;"
-        "    ['play', 'playing', 'loadedmetadata', 'timeupdate', 'ratechange'].forEach(function(evt) {"
-        "      document.addEventListener(evt, function(e) {"
-        "        if (e.target && e.target.tagName === 'VIDEO') {"
-        "          var s = window.__hosiPitchShift || 0;"
-        "          var r = Math.pow(2.0, s / 12.0);"
-        "          try {"
-        "            e.target.preservesPitch = false;"
-        "            e.target.mozPreservesPitch = false;"
-        "            e.target.webkitPreservesPitch = false;"
-        "            if (Math.abs(e.target.playbackRate - r) > 0.001) {"
-        "              e.target.playbackRate = r;"
-        "            }"
-        "          } catch(err) {}"
-        "        }"
-        "      }, true);"
-        "    });"
-        "    setInterval(function() {"
-        "      var s = window.__hosiPitchShift || 0;"
-        "      var r = Math.pow(2.0, s / 12.0);"
-        "      document.querySelectorAll('video').forEach(function(v) {"
-        "        try {"
-        "          v.preservesPitch = false;"
-        "          v.mozPreservesPitch = false;"
-        "          v.webkitPreservesPitch = false;"
-        "          if (Math.abs(v.playbackRate - r) > 0.001) {"
-        "            v.playbackRate = r;"
-        "          }"
-        "        } catch(err) {}"
-        "      });"
-        "    }, 600);"
-        "  }"
-        "})();";
-    
-    if (webBrowser != nullptr)
-    {
-        webBrowser->evaluateJavascript(jsCode);
     }
 }
 
@@ -729,7 +673,10 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
             activeSongName = songMatchedName;
             currentPitchShift = 0;
 
-            juce::String genderSuffix = (activeGender == ActiveDuetGender::Female) ? " (♀ Nữ)" : " (♂ Nam)";
+            juce::String genderSuffix = (activeGender == ActiveDuetGender::Female) 
+                ? juce::String::fromUTF8(u8" (♀ Nữ)") 
+                : juce::String::fromUTF8(u8" (♂ Nam)");
+
             pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(rootNote, scaleType) + genderSuffix, juce::dontSendNotification);
             updateDuetButtonsUI();
 
@@ -741,12 +688,12 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
 
             juce::String alertMsg = juce::String::fromUTF8(u8"✓ Đã tự động nhận diện Tone bài hát từ YouTube:\n\n")
                                   + juce::String::fromUTF8(u8"• Bài hát / Video: ") + songMatchedName + "\n"
-                                  + juce::String::fromUTF8(u8"• Tone hiện tại: [") + detectedTone + (isMinor ? " (Thứ)" : " (Trưởng)") + genderSuffix + "]\n"
-                                  + juce::String::fromUTF8(u8"• Song Ca Nam/Nữ: [♂ Nam: ") + maleTone + juce::String::fromUTF8(u8" | ♀ Nữ: ") + femaleTone + "]\n\n"
-                                  + juce::String::fromUTF8(u8"💡 Phím tắt nhanh khi hát:\n")
-                                  + juce::String::fromUTF8(u8"  • Phím M hoặc 1: Chuyển sang Tone Nam\n")
-                                  + juce::String::fromUTF8(u8"  • Phím F hoặc 2: Chuyển sang Tone Nữ\n")
-                                  + juce::String::fromUTF8(u8"  • Phím + / - : Tăng / Giảm Tone khi lên giọng\n")
+                                  + juce::String::fromUTF8(u8"• Tone hiện tại: [") + detectedTone + (isMinor ? juce::String::fromUTF8(u8" (Thứ)") : juce::String::fromUTF8(u8" (Trưởng)")) + genderSuffix + "]\n"
+                                  + juce::String::fromUTF8(u8"• Song Ca Nam/Nữ: [") + juce::String::fromUTF8(u8"♂ Nam: ") + maleTone + juce::String::fromUTF8(u8" | ♀ Nữ: ") + femaleTone + "]\n\n"
+                                  + juce::String::fromUTF8(u8"💡 Phím tắt chuyển Tone nhanh khi hát:\n")
+                                  + juce::String::fromUTF8(u8"  • Phím M hoặc 1: Chuyển Auto-Tune sang Tone Nam\n")
+                                  + juce::String::fromUTF8(u8"  • Phím F hoặc 2: Chuyển Auto-Tune sang Tone Nữ\n")
+                                  + juce::String::fromUTF8(u8"  • Phím + / - : Chuyển Tone Auto-Tune khi bài hát chuyển đoạn/lên tone\n")
                                   + juce::String::fromUTF8(u8"• Đã tự động nạp thành công vào Auto-Tune trong Rack!");
 
             juce::AlertWindow::showMessageBoxAsync(
