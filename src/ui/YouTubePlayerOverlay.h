@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_gui_extra/juce_gui_extra.h>
+#include "../audio/KeyDetector.h"
 
 class YouTubePlayerOverlay : public juce::Component, public juce::TextEditor::Listener
 {
@@ -16,10 +17,18 @@ public:
     void loadUrl(const juce::String& url);
 
     std::function<void()> onCloseClicked;
+    std::function<void()> onDetectAndPushToAutoTune;
+    std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& sourceName)> onApplyTone;
+    std::function<void()> onOpenSongbook;
 
 private:
     juce::Label titleLabel;
     juce::TextButton closeButton{ "X" };
+
+    // Tone & Auto-Tune Direct Controls
+    juce::TextButton detectKeyButton{ juce::String::fromUTF8(u8"🎯 DÒ TONE (AUTO-KEY)") };
+    juce::TextButton manualToneButton{ juce::String::fromUTF8(u8"⚡ NẠP AUTO-TUNE") };
+    juce::TextButton songbookQuickButton{ juce::String::fromUTF8(u8"🎵 SỔ TONE") };
 
     // Search Box
     juce::TextEditor searchEditor;
@@ -46,6 +55,8 @@ private:
 
     void executePitchShift(int semitones);
     void injectAdSkipScript();
+    void showManualToneMenu();
+    void detectKeyFromYouTubeTitleOrAudio();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(YouTubePlayerOverlay)
 };

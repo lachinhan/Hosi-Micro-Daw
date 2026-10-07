@@ -217,6 +217,21 @@ MainComponent::MainComponent()
     youtubeOverlay->onCloseClicked = [this]() {
         showYouTubePlayer(false);
     };
+    youtubeOverlay->onDetectAndPushToAutoTune = [this]() {
+        if (keyDetectorBar != nullptr)
+        {
+            keyDetectorBar->syncKeyToPitchPlugin();
+        }
+    };
+    youtubeOverlay->onApplyTone = [this](int rootNote, KeyDetector::ScaleType scale, const juce::String& songName) {
+        if (keyDetectorBar != nullptr)
+        {
+            keyDetectorBar->applyKeyToAutoTune(rootNote, scale, songName);
+        }
+    };
+    youtubeOverlay->onOpenSongbook = [this]() {
+        showSongbook(true);
+    };
     addChildComponent(youtubeOverlay.get());
 #endif
 

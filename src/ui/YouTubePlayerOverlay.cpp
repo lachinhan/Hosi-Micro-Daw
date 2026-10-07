@@ -17,6 +17,32 @@ YouTubePlayerOverlay::YouTubePlayerOverlay()
     };
     addAndMakeVisible(closeButton);
 
+    // Tone & Auto-Tune Direct Controls
+    detectKeyButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff059669)); // Emerald Green
+    detectKeyButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    detectKeyButton.setTooltip(juce::String::fromUTF8(u8"Dò Tone tự động từ Beat / Video đang phát và truyền thẳng vào Auto-Tune"));
+    detectKeyButton.onClick = [this]() {
+        detectKeyFromYouTubeTitleOrAudio();
+    };
+    addAndMakeVisible(detectKeyButton);
+
+    manualToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0284c7)); // Sky Blue
+    manualToneButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    manualToneButton.setTooltip(juce::String::fromUTF8(u8"Chọn nhanh Tone bài hát (Major/Minor) và gửi ngay vào Auto-Tune"));
+    manualToneButton.onClick = [this]() {
+        showManualToneMenu();
+    };
+    addAndMakeVisible(manualToneButton);
+
+    songbookQuickButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff7c3aed)); // Violet
+    songbookQuickButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    songbookQuickButton.setTooltip(juce::String::fromUTF8(u8"Mở Sổ Tone 1.033+ bài hát để tra cứu tone chuẩn Nam / Nữ"));
+    songbookQuickButton.onClick = [this]() {
+        if (onOpenSongbook)
+            onOpenSongbook();
+    };
+    addAndMakeVisible(songbookQuickButton);
+
     // Search Box
     searchEditor.setTextToShowWhenEmpty(juce::String::fromUTF8(u8"🔍 Gõ tên bài hát để tìm beat Karaoke trên YouTube (ví dụ: hoa no khong mau karaoke)..."), juce::Colour(0xff94a3b8));
     searchEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour(0xff1e293b));
@@ -112,11 +138,17 @@ void YouTubePlayerOverlay::resized()
 {
     auto bounds = getLocalBounds().reduced(8);
 
-    // Header Row 1 (Title + Close + Clean Ad-Skip)
+    // Header Row 1 (Title + Quick Action Buttons + Close)
     auto topRow = bounds.removeFromTop(36);
     closeButton.setBounds(topRow.removeFromRight(36).reduced(2));
     refreshButton.setBounds(topRow.removeFromRight(76).reduced(2));
-    cleanModeButton.setBounds(topRow.removeFromRight(136).reduced(2));
+    cleanModeButton.setBounds(topRow.removeFromRight(126).reduced(2));
+    
+    // Auto-Tune & Tone Buttons on Right side of Row 1
+    songbookQuickButton.setBounds(topRow.removeFromRight(95).reduced(2));
+    manualToneButton.setBounds(topRow.removeFromRight(135).reduced(2));
+    detectKeyButton.setBounds(topRow.removeFromRight(155).reduced(2));
+
     titleLabel.setBounds(topRow);
 
     // Header Row 2 (Search Editor + Search Button + Pitch Controls)
@@ -288,4 +320,48 @@ void YouTubePlayerOverlay::injectAdSkipScript()
         webBrowser->evaluateJavascript(js);
     }
 }
+
+void YouTubePlayerOverlay::showManualToneMenu()
+{
+    juce::PopupMenu menu;
+    menu.addSectionHeader(juce::String::fromUTF8(u8"CHỌN TONE GỬI THẲNG VÀO AUTO-TUNE"));
+
+    juce::PopupMenu majorMenu;
+    juce::PopupMenu minorMenu;
+
+    for (int i = 0; i < 12; ++i)
+    {
+        const juce::String note = KeyDetector::getNoteName(i);
+        majorMenu.addItem(100 + i, note + " Major (Trưởng)");
+        minorMenu.addItem(200 + i, note + " Minor (Thứ)");
+    }
+
+    menu.addSubMenu(juce::String::fromUTF8(u8"♫ Giọng Trưởng (Major Scale)"), majorMenu);
+    menu.addSubMenu(juce::String::fromUTF8(u8"♫ Giọng Thứ (Minor Scale)"), minorMenu);
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&manualToneButton), [this](int result) {
+        if (result >= 100 && result < 112)
+        {
+            int root = result - 100;
+            if (onApplyTone)
+                onApplyTone(root, KeyDetector::ScaleType::Major, juce::String::fromUTF8(u8"YouTube Player (Thủ công)"));
+        }
+        else if (result >= 200 && result < 212)
+        {
+            int root = result - 200;
+            if (onApplyTone)
+                onApplyTone(root, KeyDetector::ScaleType::Minor, juce::String::fromUTF8(u8"YouTube Player (Thủ công)"));
+        }
+    });
+}
+
+void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
+{
+    // If audio key detector callback is wired, run it
+    if (onDetectAndPushToAutoTune)
+    {
+        onDetectAndPushToAutoTune();
+    }
+}
+
 
