@@ -1,0 +1,22 @@
+# ==============================================================================
+# Git Ignore for LiveStream Micro-DAW (Private Source Repository)
+# ==============================================================================
+
+# Build directories and outputs
+build/
+build_mac/
+dist_macos/
+installer_output/
+third_party/webview2/
+
+# Local PRO distribution folders & binaries
+*PRO*Portable.*
+*PRO*Setup.*
+Hosi Micro Daw PRO/
+Hosi Micro Daw PRO Setup/
+LiveStream Micro-DAW PRO.exe
+LiveStream_Micro_DAW_PRO_Setup.exe
+WebView2Loader.dll
+*.WebView2/
+
+
