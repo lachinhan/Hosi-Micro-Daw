@@ -19,13 +19,19 @@ public:
 
     std::function<void()> onCloseClicked;
     std::function<void()> onDetectAndPushToAutoTune;
-    std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& sourceName)> onApplyTone;
+    std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& sourceName, bool showNotificationPopup)> onApplyTone;
     std::function<void()> onOpenSongbook;
 
 private:
     SongbookManager* songbookManager{ nullptr };
     juce::Label titleLabel;
     juce::TextButton closeButton{ "X" };
+
+    // Base Tone Tracking for Auto-Tune Transposition Sync
+    int currentBaseRootNote{ 9 }; // Default Am (A = 9)
+    KeyDetector::ScaleType currentBaseScale{ KeyDetector::ScaleType::Minor };
+    bool hasActiveBaseTone{ false };
+    juce::String activeSongName{ "" };
 
     // Tone & Auto-Tune Direct Controls
     juce::TextButton detectKeyButton{ juce::String::fromUTF8(u8"🎯 DÒ TONE (AUTO-KEY)") };

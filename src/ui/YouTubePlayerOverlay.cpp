@@ -233,6 +233,27 @@ void YouTubePlayerOverlay::executePitchShift(int semitones)
     stylePitchBtn(pitchUp2Btn, 2);
     stylePitchBtn(pitchUp3Btn, 3);
 
+    // Calculate transposed root note for Auto-Tune
+    int transposedRoot = (currentBaseRootNote + semitones) % 12;
+    if (transposedRoot < 0) transposedRoot += 12;
+
+    const juce::String transposedKeyName = KeyDetector::formatKeyName(transposedRoot, currentBaseScale);
+    
+    // Update Pitch Label on Toolbar in Realtime
+    juce::String shiftText = (semitones > 0 ? "+" : "") + juce::String(semitones);
+    if (semitones == 0)
+        pitchLabel.setText("TONE: " + transposedKeyName, juce::dontSendNotification);
+    else
+        pitchLabel.setText("TONE: " + transposedKeyName + " (" + shiftText + ")", juce::dontSendNotification);
+
+    // Automatically sync the transposed Tone into Auto-Tune without blocking popup
+    if (onApplyTone)
+    {
+        onApplyTone(transposedRoot, currentBaseScale, 
+                    (activeSongName.isNotEmpty() ? activeSongName : juce::String::fromUTF8(u8"YouTube Beat")) + " [" + transposedKeyName + " (" + shiftText + ")]", 
+                    false);
+    }
+
     // Calculate HTML5 playback rate corresponding to semitone shift
     // semitone formula: rate = 2^(semitones / 12)
     float rate = std::pow(2.0f, static_cast<float>(semitones) / 12.0f);
@@ -344,14 +365,26 @@ void YouTubePlayerOverlay::showManualToneMenu()
         if (result >= 100 && result < 112)
         {
             int root = result - 100;
+            currentBaseRootNote = root;
+            currentBaseScale = KeyDetector::ScaleType::Major;
+            hasActiveBaseTone = true;
+            activeSongName = juce::String::fromUTF8(u8"YouTube Beat");
+            currentPitchShift = 0;
+            pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(root, KeyDetector::ScaleType::Major), juce::dontSendNotification);
             if (onApplyTone)
-                onApplyTone(root, KeyDetector::ScaleType::Major, juce::String::fromUTF8(u8"YouTube Player (Thủ công)"));
+                onApplyTone(root, KeyDetector::ScaleType::Major, juce::String::fromUTF8(u8"YouTube Player (Thủ công)"), true);
         }
         else if (result >= 200 && result < 212)
         {
             int root = result - 200;
+            currentBaseRootNote = root;
+            currentBaseScale = KeyDetector::ScaleType::Minor;
+            hasActiveBaseTone = true;
+            activeSongName = juce::String::fromUTF8(u8"YouTube Beat");
+            currentPitchShift = 0;
+            pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(root, KeyDetector::ScaleType::Minor), juce::dontSendNotification);
             if (onApplyTone)
-                onApplyTone(root, KeyDetector::ScaleType::Minor, juce::String::fromUTF8(u8"YouTube Player (Thủ công)"));
+                onApplyTone(root, KeyDetector::ScaleType::Minor, juce::String::fromUTF8(u8"YouTube Player (Thủ công)"), true);
         }
     });
 }
@@ -460,9 +493,16 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
             SongbookManager::parseKeyAndScale(detectedTone, rootNote, isMinor);
             auto scaleType = isMinor ? KeyDetector::ScaleType::Minor : KeyDetector::ScaleType::Major;
 
+            currentBaseRootNote = rootNote;
+            currentBaseScale = scaleType;
+            hasActiveBaseTone = true;
+            activeSongName = songMatchedName;
+            currentPitchShift = 0;
+            pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(rootNote, scaleType), juce::dontSendNotification);
+
             if (onApplyTone)
             {
-                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + "]");
+                onApplyTone(rootNote, scaleType, songMatchedName + " [" + detectedTone + "]", true);
             }
 
             juce::String alertMsg = juce::String::fromUTF8(u8"✓ Tự động nhận diện Tone bài hát từ YouTube:\n\n")
