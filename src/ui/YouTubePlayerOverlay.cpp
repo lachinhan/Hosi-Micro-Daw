@@ -65,11 +65,13 @@ YouTubePlayerOverlay::YouTubePlayerOverlay()
         addAndMakeVisible(btn);
     };
 
+    setupPitchBtn(pitchDown3Btn, -3);
     setupPitchBtn(pitchDown2Btn, -2);
     setupPitchBtn(pitchDown1Btn, -1);
     setupPitchBtn(pitchResetBtn, 0);
     setupPitchBtn(pitchUp1Btn, 1);
     setupPitchBtn(pitchUp2Btn, 2);
+    setupPitchBtn(pitchUp3Btn, 3);
 
     // Create Native WebBrowserComponent with WebView2 on Windows
     try
@@ -120,16 +122,18 @@ void YouTubePlayerOverlay::resized()
     // Header Row 2 (Search Editor + Search Button + Pitch Controls)
     auto searchRow = bounds.removeFromTop(38).reduced(0, 2);
     
-    // Right side: Pitch buttons
-    pitchUp2Btn.setBounds(searchRow.removeFromRight(32).reduced(1));
-    pitchUp1Btn.setBounds(searchRow.removeFromRight(32).reduced(1));
-    pitchResetBtn.setBounds(searchRow.removeFromRight(32).reduced(1));
-    pitchDown1Btn.setBounds(searchRow.removeFromRight(32).reduced(1));
-    pitchDown2Btn.setBounds(searchRow.removeFromRight(32).reduced(1));
-    pitchLabel.setBounds(searchRow.removeFromRight(48));
+    // Right side: Pitch buttons (-3, -2, -1, 0, +1, +2, +3)
+    pitchUp3Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchUp2Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchUp1Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchResetBtn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchDown1Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchDown2Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchDown3Btn.setBounds(searchRow.removeFromRight(28).reduced(1));
+    pitchLabel.setBounds(searchRow.removeFromRight(44));
 
-    searchRow.removeFromRight(8);
-    searchButton.setBounds(searchRow.removeFromRight(96));
+    searchRow.removeFromRight(6);
+    searchButton.setBounds(searchRow.removeFromRight(90));
     searchRow.removeFromRight(6);
     searchEditor.setBounds(searchRow);
 
@@ -188,19 +192,69 @@ void YouTubePlayerOverlay::executePitchShift(int semitones)
         btn.setColour(juce::TextButton::textColourOffId, active ? juce::Colours::white : juce::Colour(0xff38bdf8));
     };
 
+    stylePitchBtn(pitchDown3Btn, -3);
     stylePitchBtn(pitchDown2Btn, -2);
     stylePitchBtn(pitchDown1Btn, -1);
     stylePitchBtn(pitchResetBtn, 0);
     stylePitchBtn(pitchUp1Btn, 1);
     stylePitchBtn(pitchUp2Btn, 2);
+    stylePitchBtn(pitchUp3Btn, 3);
 
     // Calculate HTML5 playback rate corresponding to semitone shift
     // semitone formula: rate = 2^(semitones / 12)
     float rate = std::pow(2.0f, static_cast<float>(semitones) / 12.0f);
-    juce::String jsCode = "try { "
-                          "  var v = document.querySelector('video'); "
-                          "  if (v) { v.playbackRate = " + juce::String(rate, 4) + "; } "
-                          "} catch(e) {}";
+    
+    // Inject persistent JavaScript pitch shifting hook
+    juce::String jsCode = 
+        "(function() {"
+        "  window.__hosiPitchShift = " + juce::String(semitones) + ";"
+        "  var targetRate = " + juce::String(rate, 4) + ";"
+        "  function applyTone(v) {"
+        "    if (!v) return;"
+        "    try {"
+        "      v.preservesPitch = false;"
+        "      v.mozPreservesPitch = false;"
+        "      v.webkitPreservesPitch = false;"
+        "      if (Math.abs(v.playbackRate - targetRate) > 0.001) {"
+        "        v.playbackRate = targetRate;"
+        "      }"
+        "    } catch(e) {}"
+        "  }"
+        "  document.querySelectorAll('video').forEach(applyTone);"
+        "  if (!window.__hosiToneHookInstalled) {"
+        "    window.__hosiToneHookInstalled = true;"
+        "    ['play', 'playing', 'loadedmetadata', 'timeupdate', 'ratechange'].forEach(function(evt) {"
+        "      document.addEventListener(evt, function(e) {"
+        "        if (e.target && e.target.tagName === 'VIDEO') {"
+        "          var s = window.__hosiPitchShift || 0;"
+        "          var r = Math.pow(2.0, s / 12.0);"
+        "          try {"
+        "            e.target.preservesPitch = false;"
+        "            e.target.mozPreservesPitch = false;"
+        "            e.target.webkitPreservesPitch = false;"
+        "            if (Math.abs(e.target.playbackRate - r) > 0.001) {"
+        "              e.target.playbackRate = r;"
+        "            }"
+        "          } catch(err) {}"
+        "        }"
+        "      }, true);"
+        "    });"
+        "    setInterval(function() {"
+        "      var s = window.__hosiPitchShift || 0;"
+        "      var r = Math.pow(2.0, s / 12.0);"
+        "      document.querySelectorAll('video').forEach(function(v) {"
+        "        try {"
+        "          v.preservesPitch = false;"
+        "          v.mozPreservesPitch = false;"
+        "          v.webkitPreservesPitch = false;"
+        "          if (Math.abs(v.playbackRate - r) > 0.001) {"
+        "            v.playbackRate = r;"
+        "          }"
+        "        } catch(err) {}"
+        "      });"
+        "    }, 600);"
+        "  }"
+        "})();";
     
     if (webBrowser != nullptr)
     {
@@ -210,14 +264,24 @@ void YouTubePlayerOverlay::executePitchShift(int semitones)
 
 void YouTubePlayerOverlay::injectAdSkipScript()
 {
-    juce::String js = "try {"
-                      "  var skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button');"
-                      "  if (skipBtn) { skipBtn.click(); }"
-                      "  var adOverlay = document.querySelector('.ytp-ad-overlay-container, .ytp-ad-player-overlay');"
-                      "  if (adOverlay) { adOverlay.remove(); }"
-                      "  var vid = document.querySelector('video');"
-                      "  if (vid && document.querySelector('.ad-showing')) { vid.currentTime = vid.duration || 9999; }"
-                      "} catch(e) {}";
+    juce::String js = 
+        "(function() {"
+        "  function runAdSkip() {"
+        "    try {"
+        "      var skipBtn = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button, .ytp-ad-overlay-close-button');"
+        "      if (skipBtn) { skipBtn.click(); }"
+        "      var adOverlays = document.querySelectorAll('.ytp-ad-overlay-container, .ytp-ad-player-overlay, ytd-banner-promo-renderer');"
+        "      adOverlays.forEach(function(el) { el.remove(); });"
+        "      var vid = document.querySelector('video');"
+        "      if (vid && document.querySelector('.ad-showing')) { vid.currentTime = vid.duration || 9999; }"
+        "    } catch(e) {}"
+        "  }"
+        "  runAdSkip();"
+        "  if (!window.__hosiAdSkipHook) {"
+        "    window.__hosiAdSkipHook = true;"
+        "    setInterval(runAdSkip, 500);"
+        "  }"
+        "})();";
 
     if (webBrowser != nullptr)
     {

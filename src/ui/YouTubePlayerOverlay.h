@@ -31,11 +31,13 @@ private:
 
     // Pitch Shifter Helper Buttons
     juce::Label pitchLabel{ {}, juce::String::fromUTF8(u8"TONE:") };
+    juce::TextButton pitchDown3Btn{ "-3" };
     juce::TextButton pitchDown2Btn{ "-2" };
     juce::TextButton pitchDown1Btn{ "-1" };
     juce::TextButton pitchResetBtn{ "0" };
     juce::TextButton pitchUp1Btn{ "+1" };
     juce::TextButton pitchUp2Btn{ "+2" };
+    juce::TextButton pitchUp3Btn{ "+3" };
     int currentPitchShift{ 0 };
     juce::String currentUrl{ "https://www.youtube.com/results?search_query=karaoke+viet+nam+beat+chuan" };
 
