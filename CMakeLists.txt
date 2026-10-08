@@ -116,6 +116,8 @@ set(COMMON_DAW_SOURCES
     src/audio/BuiltInDspAudioProcessor.h
     src/ui/BuiltInDspComponent.cpp
     src/ui/BuiltInDspComponent.h
+    src/audio/TempoSyncEngine.cpp
+    src/audio/TempoSyncEngine.h
     src/audio/AudioRecorder.cpp
     src/audio/AudioRecorder.h
 )

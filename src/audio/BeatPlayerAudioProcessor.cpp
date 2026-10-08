@@ -17,6 +17,9 @@ void BeatPlayerAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     currentSampleRate = (sampleRate > 8000.0) ? sampleRate : 44100.0;
     transportSource.prepareToPlay(samplesPerBlock, currentSampleRate);
     keyDetector.prepare(currentSampleRate, samplesPerBlock);
+    if (tempoSyncEngine != nullptr)
+        tempoSyncEngine->prepare(currentSampleRate, samplesPerBlock);
+
     tempBeatBuffer.setSize(2, samplesPerBlock);
 
     smoothedDuckingGain.reset(currentSampleRate, 0.04); // 40ms smooth ramp
@@ -120,17 +123,25 @@ void BeatPlayerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
         }
     }
 
-    // Feed chosen audio stream to Key Detector
+    // Feed chosen audio stream to Key Detector & Tempo Sync Engine
     if (source == AnalysisSource::BeatPlayer)
     {
         if (isCurrentlyPlaying)
         {
             keyDetector.processBlock(tempBeatBuffer);
+            if (tempoSyncEngine != nullptr)
+            {
+                tempoSyncEngine->processAudioBlock(tempBeatBuffer);
+            }
         }
     }
     else // LiveMicMaster
     {
         keyDetector.processBlock(buffer);
+        if (tempoSyncEngine != nullptr)
+        {
+            tempoSyncEngine->processAudioBlock(buffer);
+        }
     }
 }
 
@@ -154,6 +165,10 @@ bool BeatPlayerAudioProcessor::loadAudioFile(const juce::File& file, juce::Strin
     reader->read(&offlineBuffer, 0, offlineBuffer.getNumSamples(), 0, true, true);
     
     keyDetector.analyzeBufferOffline(offlineBuffer, reader->sampleRate);
+    if (tempoSyncEngine != nullptr)
+    {
+        tempoSyncEngine->processAudioBlock(offlineBuffer);
+    }
 
     // Setup transport source for playback
     const juce::ScopedLock sl(transportLock);
@@ -225,6 +240,8 @@ void BeatPlayerAudioProcessor::setAnalysisSource(AnalysisSource src)
 {
     analysisSource.store(src, std::memory_order_release);
     keyDetector.reset();
+    if (tempoSyncEngine != nullptr)
+        tempoSyncEngine->resetDetector();
 }
 
 double BeatPlayerAudioProcessor::getCurrentPosition() const

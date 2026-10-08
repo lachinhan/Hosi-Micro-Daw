@@ -26,6 +26,7 @@ public:
     std::function<void()> onCloseClicked;
     std::function<void()> onDetectAndPushToAutoTune;
     std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& sourceName, bool showNotificationPopup)> onApplyTone;
+    std::function<void(double bpm, const juce::String& songName)> onApplyTempo;
     std::function<void()> onOpenSongbook;
 
 private:

@@ -459,6 +459,8 @@ void YouTubePlayerOverlay::searchAndPlay(const juce::String& songName)
                 maleTone = s.keyMale.isNotEmpty() ? s.keyMale : "Am";
                 femaleTone = s.keyFemale.isNotEmpty() ? s.keyFemale : "Dm";
                 updateDuetButtonsUI();
+                if (s.tempo > 0.0 && onApplyTempo)
+                    onApplyTempo(s.tempo, s.title);
                 break;
             }
         }
@@ -692,6 +694,7 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
         int rootNote = 0;
         bool isMinor = false;
         juce::String songMatchedName = title;
+        const SongItem* bestMatch = nullptr;
 
         // --- 1. Regex / Pattern check for explicit key in title ---
         // Examples: (Am), [Am], (Tone Nam: Dm), (Tone Nữ: Gm), Tone Dm, Tone Am, Am, Em, etc.
@@ -733,7 +736,6 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
             const juce::String paddedTitle = " " + cleanTitle + " ";
             const auto& allSongs = songbookManager->getAllSongs();
             
-            const SongItem* bestMatch = nullptr;
             int bestMatchLen = 0;
 
             for (const auto& s : allSongs)
@@ -818,6 +820,11 @@ void YouTubePlayerOverlay::detectKeyFromYouTubeTitleOrAudio()
 
             pitchLabel.setText("TONE: " + KeyDetector::formatKeyName(rootNote, scaleType) + genderSuffix, juce::dontSendNotification);
             updateDuetButtonsUI();
+
+            if (bestMatch != nullptr && bestMatch->tempo > 0.0 && onApplyTempo)
+            {
+                onApplyTempo(bestMatch->tempo, songMatchedName);
+            }
 
             if (onApplyTone)
             {

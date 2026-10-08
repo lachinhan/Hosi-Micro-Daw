@@ -67,14 +67,15 @@
 
 ---
 
-### 4. ⏱️ Tính Năng 4: Smart BPM-Synced Reverb & Delay (Bí Quyết Studio Cho Tiếng Hát Hòa Quyện)
+### 4. ⏱️ Tính Năng 4: Smart BPM-Synced Reverb & Delay (Bí Quyết Studio Cho Tiếng Hát Hòa Quyện) - [x] **ĐÃ HOÀN THÀNH & TÍCH HỢP 100% VÀO BẢN PRO v3.x**
 * **Nỗi đau lớn**:
   - Hát bài nhanh (Remix 128 BPM): Delay nhại chậm làm chồng chéo chữ, dính giọng, đục ngầu.
   - Hát bài chậm (Bolero 70 BPM): Delay dứt sớm làm khô giọng, hụt hơi.
-* **Giải pháp Tự động**:
-  - **Tự động nhận Tempo (BPM)**: Từ dữ liệu Sổ Tone, từ nút Tap Tempo, hoặc từ thuật toán Onset Beat Detector tự dò nhịp Beat YouTube sau 3 giây dạo đầu.
-  - **Auto-Delay theo phách**: Tự tính chính xác thời gian delay: $\text{Delay (ms)} = \frac{60.000}{\text{BPM}} \times \text{NoteValue}$ (1/4, 1/8 Dotted, Triplet). Tiếng delay nhại lại nảy tanh tách đúng từng nhịp trống.
-  - **Auto-Reverb Tail**: Đuôi vang (Decay) tự động khép lại đúng cuối ô nhịp (Bar), giọng vừa bay bổng mênh mang mà **không bao giờ bị đè mờ câu hát tiếp theo**.
+* **Giải pháp Tự động Đã Triển Khai**:
+  - **Tự động nhận Tempo (BPM)**: Lõi `TempoSyncEngine` nhận diện BPM từ dữ liệu Sổ Tone (1.033+ bài hát), nạp từ YouTube Player, nút `[ TAP ]` Tempo thông minh hoặc dò tự động qua thuật toán Spectral Flux Transient Onset Beat Detector.
+  - **Auto-Delay theo phách**: Tự tính chính xác thời gian delay: $\text{Delay (ms)} = \frac{60.000}{\text{BPM}} \times \text{Subdivision}$ (1/4 Pop, 1/8 Dotted Ballad, 1/8 Energy, 1/8 Triplet Bounce, 1/16 Fast, 1/2 Long). Bộ đệm nội suy mượt mà (Fractional Smoothed Buffer) không gây nổ click khi chuyển tempo khi đang hát live.
+  - **Auto-Reverb Tail**: Đuôi vang (Decay) tự động khép lại đúng cuối ô nhịp (1/2 Bar, 1 Bar, 2 Bars, 4 Bars) theo công thức $\text{Decay (sec)} = \frac{240}{\text{BPM}} \times \text{Bars}$, giọng vừa bay bổng mênh mang mà **không bao giờ bị đè mờ câu hát tiếp theo**.
+  - **Đồng bộ toàn diện với VST3 bên thứ ba**: Tích hợp trực tiếp vào Host PlayHead (`MicroDawPlayHead`), giúp các Plugin VST3 như Valhalla, Soundtoys EchoBoy, FabFilter tự động bám nhịp BPM của bài hát đang phát.
   - **Dung lượng thêm vào**: **~0 MB (~20 KB code toán C++)**.
 
 ---

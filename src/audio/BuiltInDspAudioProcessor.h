@@ -4,6 +4,7 @@
 #include <juce_dsp/juce_dsp.h>
 #include <atomic>
 #include <vector>
+#include "TempoSyncEngine.h"
 
 class BuiltInDspAudioProcessor : public juce::AudioProcessor, public juce::ChangeBroadcaster
 {
@@ -26,6 +27,14 @@ public:
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
+
+    // --- Global Host Tempo (BPM) ---
+    void setHostBpm(double bpm) noexcept
+    {
+        hostBpm.store(bpm, std::memory_order_release);
+        if (isReverbBpmSync()) updateReverbParams();
+    }
+    double getHostBpm() const noexcept { return hostBpm.load(std::memory_order_relaxed); }
 
     // --- Noise Gate Controls ---
     void setGateEnabled(bool enabled) noexcept
@@ -72,7 +81,7 @@ public:
     float getCompMakeupDb() const noexcept { return compMakeupDb.load(std::memory_order_relaxed); }
     float getCompGainReductionDb() const noexcept { return compGainReductionDb.load(std::memory_order_relaxed); }
 
-    // --- Lush Reverb Controls ---
+    // --- Lush Reverb Controls & Smart BPM Auto-Tail ---
     void setReverbEnabled(bool enabled) noexcept { reverbEnabled.store(enabled, std::memory_order_release); }
     bool isReverbEnabled() const noexcept { return reverbEnabled.load(std::memory_order_relaxed); }
     void setReverbSize(float size) noexcept { reverbSize.store(size, std::memory_order_release); updateReverbParams(); }
@@ -82,7 +91,12 @@ public:
     void setReverbWetMix(float wet) noexcept { reverbWetMix.store(wet, std::memory_order_release); }
     float getReverbWetMix() const noexcept { return reverbWetMix.load(std::memory_order_relaxed); }
 
-    // --- Stereo Delay / Echo Controls ---
+    void setReverbBpmSync(bool sync) noexcept { reverbBpmSync.store(sync, std::memory_order_release); updateReverbParams(); }
+    bool isReverbBpmSync() const noexcept { return reverbBpmSync.load(std::memory_order_relaxed); }
+    void setReverbBarLength(TempoSyncEngine::ReverbBarLength bars) noexcept { reverbBarLength.store(bars, std::memory_order_release); updateReverbParams(); }
+    TempoSyncEngine::ReverbBarLength getReverbBarLength() const noexcept { return reverbBarLength.load(std::memory_order_relaxed); }
+
+    // --- Stereo Delay / Echo Controls & Smart BPM Subdivision ---
     void setDelayEnabled(bool enabled) noexcept { delayEnabled.store(enabled, std::memory_order_release); }
     bool isDelayEnabled() const noexcept { return delayEnabled.load(std::memory_order_relaxed); }
     void setDelayTimeMs(float timeMs) noexcept { delayTimeMs.store(timeMs, std::memory_order_release); }
@@ -91,6 +105,20 @@ public:
     float getDelayFeedback() const noexcept { return delayFeedback.load(std::memory_order_relaxed); }
     void setDelayWetMix(float wet) noexcept { delayWetMix.store(wet, std::memory_order_release); }
     float getDelayWetMix() const noexcept { return delayWetMix.load(std::memory_order_relaxed); }
+
+    void setDelayBpmSync(bool sync) noexcept { delayBpmSync.store(sync, std::memory_order_release); }
+    bool isDelayBpmSync() const noexcept { return delayBpmSync.load(std::memory_order_relaxed); }
+    void setDelaySubdivision(TempoSyncEngine::DelaySubdivision div) noexcept { delaySubdivision.store(div, std::memory_order_release); }
+    TempoSyncEngine::DelaySubdivision getDelaySubdivision() const noexcept { return delaySubdivision.load(std::memory_order_relaxed); }
+
+    float getEffectiveDelayTimeMs() const noexcept
+    {
+        if (isDelayBpmSync())
+        {
+            return TempoSyncEngine::calculateDelayTimeMs(getHostBpm(), getDelaySubdivision());
+        }
+        return getDelayTimeMs();
+    }
 
     // --- Brickwall Limiter Controls ---
     void setLimiterEnabled(bool enabled) noexcept { limiterEnabled.store(enabled, std::memory_order_release); }
@@ -106,7 +134,7 @@ public:
     const juce::String getName() const override { return "Built-In Studio DSP Vocal Suite"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
-    double getTailLengthSeconds() const override { return 1.5; }
+    double getTailLengthSeconds() const override { return 2.0; }
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram(int) override {}
@@ -119,6 +147,7 @@ public:
 
 private:
     double currentSampleRate{ 48000.0 };
+    std::atomic<double> hostBpm{ 120.0 };
 
     // --- Noise Gate State ---
     std::atomic<bool> gateEnabled{ false };
@@ -156,6 +185,9 @@ private:
     std::atomic<float> reverbSize{ 0.65f };
     std::atomic<float> reverbDamp{ 0.35f };
     std::atomic<float> reverbWetMix{ 0.22f };
+    std::atomic<bool> reverbBpmSync{ true };
+    std::atomic<TempoSyncEngine::ReverbBarLength> reverbBarLength{ TempoSyncEngine::ReverbBarLength::OneBar };
+
     juce::Reverb reverbProcessor;
     juce::Reverb::Parameters reverbParams;
     juce::AudioBuffer<float> tempReverbBuffer;
@@ -166,10 +198,15 @@ private:
     std::atomic<float> delayTimeMs{ 260.0f };
     std::atomic<float> delayFeedback{ 0.25f };
     std::atomic<float> delayWetMix{ 0.18f };
+    std::atomic<bool> delayBpmSync{ true };
+    std::atomic<TempoSyncEngine::DelaySubdivision> delaySubdivision{ TempoSyncEngine::DelaySubdivision::DottedEighth };
+
     juce::AudioBuffer<float> delayBuffer;
     int delayWritePos{ 0 };
     float delayLowPassL{ 0.0f };
     float delayLowPassR{ 0.0f };
+    float currentSmoothedDelaySamplesL{ 0.0f };
+    float currentSmoothedDelaySamplesR{ 0.0f };
 
     // --- Limiter ---
     std::atomic<bool> limiterEnabled{ false };

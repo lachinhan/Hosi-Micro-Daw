@@ -39,13 +39,17 @@ void BuiltInDspAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     reverbProcessor.setSampleRate(currentSampleRate);
     updateReverbParams();
 
-    // Delay Buffer (Max 2.0 seconds)
-    const int maxDelaySamples = static_cast<int>(currentSampleRate * 2.0) + 1024;
+    // Delay Buffer (Max 2.5 seconds)
+    const int maxDelaySamples = static_cast<int>(currentSampleRate * 2.5) + 2048;
     delayBuffer.setSize(2, maxDelaySamples);
     delayBuffer.clear();
     delayWritePos = 0;
     delayLowPassL = 0.0f;
     delayLowPassR = 0.0f;
+
+    const float initialTimeMs = getEffectiveDelayTimeMs();
+    currentSmoothedDelaySamplesL = static_cast<float>(currentSampleRate * (initialTimeMs * 0.001f));
+    currentSmoothedDelaySamplesR = static_cast<float>(currentSampleRate * (initialTimeMs * 0.00135f));
 
     limiterPeakEnv = 0.0f;
 }
@@ -85,8 +89,25 @@ void BuiltInDspAudioProcessor::updateEqCoefficients()
 
 void BuiltInDspAudioProcessor::updateReverbParams()
 {
-    reverbParams.roomSize = std::clamp(reverbSize.load(std::memory_order_relaxed), 0.0f, 1.0f);
-    reverbParams.damping = std::clamp(reverbDamp.load(std::memory_order_relaxed), 0.0f, 1.0f);
+    if (reverbBpmSync.load(std::memory_order_relaxed))
+    {
+        const double bpm = hostBpm.load(std::memory_order_relaxed);
+        const auto barLen = reverbBarLength.load(std::memory_order_relaxed);
+        const float decaySec = TempoSyncEngine::calculateReverbDecaySec(bpm, barLen);
+
+        // Map decay seconds (0.5s - 8.0s) smoothly into juce::Reverb room size (0.30 - 0.94)
+        const float autoSize = std::clamp(std::sqrt(decaySec / 6.5f) * 0.85f, 0.28f, 0.94f);
+        const float autoDamp = 0.32f; // Keep top air crisp
+
+        reverbParams.roomSize = autoSize;
+        reverbParams.damping = autoDamp;
+    }
+    else
+    {
+        reverbParams.roomSize = std::clamp(reverbSize.load(std::memory_order_relaxed), 0.0f, 1.0f);
+        reverbParams.damping = std::clamp(reverbDamp.load(std::memory_order_relaxed), 0.0f, 1.0f);
+    }
+
     reverbParams.wetLevel = 1.0f; // Managed via wetMix blending
     reverbParams.dryLevel = 0.0f;
     reverbParams.width = 1.0f;
@@ -260,33 +281,44 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     }
 
     // -------------------------------------------------------------
-    // 4. STEREO DELAY / ECHO (Ping-Pong + Tape Lowpass Warmth)
+    // 4. STEREO DELAY / ECHO (Smart BPM Subdivisions + Ping-Pong)
     // -------------------------------------------------------------
     if (delayEnabled.load(std::memory_order_relaxed) && delayBuffer.getNumSamples() > 0)
     {
         const float wet = delayWetMix.load(std::memory_order_relaxed);
         const float fb = std::clamp(delayFeedback.load(std::memory_order_relaxed), 0.0f, 0.85f);
-        const float timeMs = std::clamp(delayTimeMs.load(std::memory_order_relaxed), 20.0f, 1500.0f);
+        const float targetTimeMs = getEffectiveDelayTimeMs();
 
-        const int delayOffsetL = std::clamp(static_cast<int>(currentSampleRate * (timeMs * 0.001f)), 1, delayBuffer.getNumSamples() - 1);
-        const int delayOffsetR = std::clamp(static_cast<int>(currentSampleRate * (timeMs * 0.00135f)), 1, delayBuffer.getNumSamples() - 1); // Slight stereo offset for 3D width
+        const float targetSamplesL = std::clamp(static_cast<float>(currentSampleRate * (targetTimeMs * 0.001f)), 1.0f, static_cast<float>(delayBuffer.getNumSamples() - 2));
+        const float targetSamplesR = std::clamp(static_cast<float>(currentSampleRate * (targetTimeMs * 0.00135f)), 1.0f, static_cast<float>(delayBuffer.getNumSamples() - 2));
 
         const int bufferSize = delayBuffer.getNumSamples();
         float* dL = delayBuffer.getWritePointer(0);
         float* dR = delayBuffer.getWritePointer(1);
 
         const float lpfAlpha = 0.28f; // ~4.5kHz analog tape high cut
+        const float smoothAlpha = 0.004f; // Smooth tape head inertia for seamless tempo adjustments
 
         for (int i = 0; i < numSamples; ++i)
         {
+            currentSmoothedDelaySamplesL = currentSmoothedDelaySamplesL * (1.0f - smoothAlpha) + targetSamplesL * smoothAlpha;
+            currentSmoothedDelaySamplesR = currentSmoothedDelaySamplesR * (1.0f - smoothAlpha) + targetSamplesR * smoothAlpha;
+
             const float inL = left[i];
             const float inR = right[i];
 
-            int readPosL = (delayWritePos - delayOffsetL + bufferSize) % bufferSize;
-            int readPosR = (delayWritePos - delayOffsetR + bufferSize) % bufferSize;
+            // Linear interpolated fractional delay reading
+            const float readPosFloatL = static_cast<float>(delayWritePos) - currentSmoothedDelaySamplesL + static_cast<float>(bufferSize * 2);
+            const int readPosIntL = static_cast<int>(readPosFloatL) % bufferSize;
+            const int nextPosL = (readPosIntL + 1) % bufferSize;
+            const float fracL = readPosFloatL - std::floor(readPosFloatL);
+            const float delayedL = dL[readPosIntL] * (1.0f - fracL) + dL[nextPosL] * fracL;
 
-            float delayedL = dL[readPosL];
-            float delayedR = dR[readPosR];
+            const float readPosFloatR = static_cast<float>(delayWritePos) - currentSmoothedDelaySamplesR + static_cast<float>(bufferSize * 2);
+            const int readPosIntR = static_cast<int>(readPosFloatR) % bufferSize;
+            const int nextPosR = (readPosIntR + 1) % bufferSize;
+            const float fracR = readPosFloatR - std::floor(readPosFloatR);
+            const float delayedR = dR[readPosIntR] * (1.0f - fracR) + dR[nextPosR] * fracR;
 
             // Low-pass filter on feedback path
             delayLowPassL = delayLowPassL * (1.0f - lpfAlpha) + delayedL * lpfAlpha;
@@ -305,7 +337,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     }
 
     // -------------------------------------------------------------
-    // 5. LUSH STUDIO REVERB (Stereo Plate / Chamber Space)
+    // 5. LUSH STUDIO REVERB (Smart BPM Auto-Tail Space)
     // -------------------------------------------------------------
     if (hasReverb)
     {
@@ -391,11 +423,12 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         setCompRatio(3.5f);
         setCompMakeupDb(3.0f);
         setReverbEnabled(true);
-        setReverbSize(0.70f);
-        setReverbDamp(0.35f);
+        setReverbBpmSync(true);
+        setReverbBarLength(TempoSyncEngine::ReverbBarLength::OneBar);
         setReverbWetMix(0.26f);
         setDelayEnabled(true);
-        setDelayTimeMs(280.0f);
+        setDelayBpmSync(true);
+        setDelaySubdivision(TempoSyncEngine::DelaySubdivision::DottedEighth);
         setDelayFeedback(0.28f);
         setDelayWetMix(0.18f);
         setLimiterEnabled(true);
@@ -414,6 +447,7 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         setCompRatio(4.0f);
         setCompMakeupDb(2.0f);
         setReverbEnabled(true);
+        setReverbBpmSync(false);
         setReverbSize(0.40f);
         setReverbDamp(0.50f);
         setReverbWetMix(0.08f);
@@ -434,11 +468,12 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         setCompRatio(3.0f);
         setCompMakeupDb(2.5f);
         setReverbEnabled(true);
-        setReverbSize(0.82f);
-        setReverbDamp(0.25f);
+        setReverbBpmSync(true);
+        setReverbBarLength(TempoSyncEngine::ReverbBarLength::TwoBars);
         setReverbWetMix(0.35f);
         setDelayEnabled(true);
-        setDelayTimeMs(320.0f);
+        setDelayBpmSync(true);
+        setDelaySubdivision(TempoSyncEngine::DelaySubdivision::Quarter);
         setDelayFeedback(0.35f);
         setDelayWetMix(0.24f);
         setLimiterEnabled(true);
@@ -501,10 +536,15 @@ void BuiltInDspAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     xml.setAttribute("reverbSize", getReverbSize());
     xml.setAttribute("reverbDamp", getReverbDamp());
     xml.setAttribute("reverbWet", getReverbWetMix());
+    xml.setAttribute("reverbBpmSync", isReverbBpmSync());
+    xml.setAttribute("reverbBarLength", static_cast<int>(getReverbBarLength()));
     xml.setAttribute("delayEnabled", isDelayEnabled());
     xml.setAttribute("delayTime", getDelayTimeMs());
     xml.setAttribute("delayFeedback", getDelayFeedback());
     xml.setAttribute("delayWet", getDelayWetMix());
+    xml.setAttribute("delayBpmSync", isDelayBpmSync());
+    xml.setAttribute("delaySubdivision", static_cast<int>(getDelaySubdivision()));
+    xml.setAttribute("hostBpm", getHostBpm());
     xml.setAttribute("limiterEnabled", isLimiterEnabled());
     xml.setAttribute("preset", static_cast<int>(getCurrentPreset()));
 
@@ -530,10 +570,15 @@ void BuiltInDspAudioProcessor::setStateInformation(const void* data, int sizeInB
         setReverbSize(static_cast<float>(xml->getDoubleAttribute("reverbSize", 0.65)));
         setReverbDamp(static_cast<float>(xml->getDoubleAttribute("reverbDamp", 0.35)));
         setReverbWetMix(static_cast<float>(xml->getDoubleAttribute("reverbWet", 0.22)));
+        setReverbBpmSync(xml->getBoolAttribute("reverbBpmSync", true));
+        setReverbBarLength(static_cast<TempoSyncEngine::ReverbBarLength>(xml->getIntAttribute("reverbBarLength", 1)));
         setDelayEnabled(xml->getBoolAttribute("delayEnabled", false));
         setDelayTimeMs(static_cast<float>(xml->getDoubleAttribute("delayTime", 260.0)));
         setDelayFeedback(static_cast<float>(xml->getDoubleAttribute("delayFeedback", 0.25)));
         setDelayWetMix(static_cast<float>(xml->getDoubleAttribute("delayWet", 0.18)));
+        setDelayBpmSync(xml->getBoolAttribute("delayBpmSync", true));
+        setDelaySubdivision(static_cast<TempoSyncEngine::DelaySubdivision>(xml->getIntAttribute("delaySubdivision", 1)));
+        setHostBpm(xml->getDoubleAttribute("hostBpm", 120.0));
         setLimiterEnabled(xml->getBoolAttribute("limiterEnabled", true));
         currentPreset.store(static_cast<VocalPreset>(xml->getIntAttribute("preset", 0)), std::memory_order_release);
         sendChangeMessage();

@@ -5,6 +5,8 @@ GraphManager::GraphManager()
 {
     formatManager.addDefaultFormats(); // Adds VST3 format
 
+    tempoSyncEngine.addChangeListener(this);
+
     // Standard 8 Vocal Rack Slots
     slots.resize(DEFAULT_SLOTS);
     slots[0].slotIndex = 0; slots[0].slotName = "Pitch Correction / Auto-Tune"; slots[0].isSpatialAux = false; slots[0].sendGainDb = 0.0f;
@@ -26,8 +28,21 @@ GraphManager::GraphManager()
 
 GraphManager::~GraphManager()
 {
+    tempoSyncEngine.removeChangeListener(this);
     if (graph != nullptr)
         graph->clear();
+}
+
+void GraphManager::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    if (source == &tempoSyncEngine)
+    {
+        if (builtInDspProcessor != nullptr)
+        {
+            builtInDspProcessor->setHostBpm(tempoSyncEngine.getBpm());
+        }
+        sendChangeMessage();
+    }
 }
 
 void GraphManager::initializeGraph()
@@ -47,11 +62,13 @@ void GraphManager::initializeGraph()
     // Create Built-In Studio DSP Vocal Suite Node
     auto dsp = std::make_unique<BuiltInDspAudioProcessor>();
     builtInDspProcessor = dsp.get();
+    builtInDspProcessor->setHostBpm(tempoSyncEngine.getBpm());
     builtInDspNode = graph->addNode(std::move(dsp));
 
     // Create Beat Player & Key Detector Node
     auto player = std::make_unique<BeatPlayerAudioProcessor>();
     beatPlayerProcessor = player.get();
+    beatPlayerProcessor->setTempoSyncEngine(&tempoSyncEngine);
     beatPlayerNode = graph->addNode(std::move(player));
 
     // Create Soundboard Node
@@ -76,6 +93,7 @@ void GraphManager::initializeGraph()
 
     // Attach Host PlayHead with active continuous live-streaming transport & beat sync
     playHead.setBeatPlayer(beatPlayerProcessor);
+    playHead.setTempoSyncEngine(&tempoSyncEngine);
     graph->setPlayHead(&playHead);
 
     rebuildConnections();

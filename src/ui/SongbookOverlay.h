@@ -26,6 +26,7 @@ public:
 
     std::function<void()> onCloseClicked;
     std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& songName)> onApplyTone;
+    std::function<void(double bpm, const juce::String& songName)> onApplyTempo;
 #if HOSI_PRO_EDITION
     std::function<void(const juce::String& songName)> onPlayYouTubeBeat;
 #endif

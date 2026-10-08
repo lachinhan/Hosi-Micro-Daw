@@ -4,6 +4,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_audio_devices/juce_audio_devices.h>
 #include "KeyDetector.h"
+#include "TempoSyncEngine.h"
 
 class BeatPlayerAudioProcessor : public juce::AudioProcessor, public juce::ChangeBroadcaster
 {
@@ -20,6 +21,10 @@ public:
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
+
+    // Tempo Sync Engine Connection
+    void setTempoSyncEngine(TempoSyncEngine* engine) noexcept { tempoSyncEngine = engine; }
+    TempoSyncEngine* getTempoSyncEngine() noexcept { return tempoSyncEngine; }
 
     // File playback controls
     bool loadAudioFile(const juce::File& file, juce::String& errorMsg);
@@ -74,6 +79,8 @@ private:
     juce::AudioTransportSource transportSource;
 
     KeyDetector keyDetector;
+    TempoSyncEngine* tempoSyncEngine{ nullptr };
+
     std::atomic<AnalysisSource> analysisSource{ AnalysisSource::BeatPlayer };
     std::atomic<bool> playing{ false };
     std::atomic<bool> looping{ true };

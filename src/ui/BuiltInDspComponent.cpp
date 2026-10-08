@@ -1,4 +1,5 @@
 #include "BuiltInDspComponent.h"
+#include <iomanip>
 
 BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
     : graphManager(graphMgr)
@@ -6,6 +7,8 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
     dspProcessor = graphManager.getBuiltInDsp();
     if (dspProcessor != nullptr)
         dspProcessor->addChangeListener(this);
+
+    graphManager.getTempoSyncEngine().addChangeListener(this);
 
     contentContainer = std::make_unique<juce::Component>();
 
@@ -43,6 +46,48 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         }
     };
     contentContainer->addAndMakeVisible(presetComboBox);
+
+    // Global Tempo Controls Bar
+    bpmTitleLabel.setText(juce::String::fromUTF8(u8"TEMPO:"), juce::dontSendNotification);
+    bpmTitleLabel.setFont(juce::FontOptions(9.5f, juce::Font::bold));
+    bpmTitleLabel.setColour(juce::Label::textColourId, juce::Colour(0xff94a3b8));
+    contentContainer->addAndMakeVisible(bpmTitleLabel);
+
+    bpmValueLabel.setText("120 BPM", juce::dontSendNotification);
+    bpmValueLabel.setFont(juce::FontOptions(10.5f, juce::Font::bold));
+    bpmValueLabel.setColour(juce::Label::textColourId, juce::Colour(0xfff59e0b)); // Gold
+    bpmValueLabel.setColour(juce::Label::backgroundColourId, juce::Colour(0xff0f172a));
+    bpmValueLabel.setJustificationType(juce::Justification::centred);
+    contentContainer->addAndMakeVisible(bpmValueLabel);
+
+    bpmDownBtn.setTooltip(juce::String::fromUTF8(u8"Giảm Tempo (-1 BPM)"));
+    bpmDownBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    bpmDownBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffcbd5e1));
+    bpmDownBtn.onClick = [this] {
+        auto& engine = graphManager.getTempoSyncEngine();
+        engine.setBpm(std::max(40.0, engine.getBpm() - 1.0), "Adjust");
+        updateAllUI();
+    };
+    contentContainer->addAndMakeVisible(bpmDownBtn);
+
+    bpmUpBtn.setTooltip(juce::String::fromUTF8(u8"Tăng Tempo (+1 BPM)"));
+    bpmUpBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    bpmUpBtn.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffcbd5e1));
+    bpmUpBtn.onClick = [this] {
+        auto& engine = graphManager.getTempoSyncEngine();
+        engine.setBpm(std::min(240.0, engine.getBpm() + 1.0), "Adjust");
+        updateAllUI();
+    };
+    contentContainer->addAndMakeVisible(bpmUpBtn);
+
+    tapTempoBtn.setTooltip(juce::String::fromUTF8(u8"Nhấp chuột 2-4 lần theo nhịp bài hát để định lượng Tempo (Tap Tempo)"));
+    tapTempoBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff4338ca)); // Indigo
+    tapTempoBtn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    tapTempoBtn.onClick = [this] {
+        graphManager.getTempoSyncEngine().tapTempo();
+        updateAllUI();
+    };
+    contentContainer->addAndMakeVisible(tapTempoBtn);
 
     // Factory Reset Button
     factoryResetButton.setButtonText(juce::String::fromUTF8(u8"🔄 KHÔI PHỤC GỐC"));
@@ -113,7 +158,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         if (dspProcessor != nullptr) dspProcessor->setCompMakeupDb(static_cast<float>(compMakeupSlider.getValue()));
     };
 
-    // --- 4. Lush Reverb ---
+    // --- 4. Lush Reverb Module & Smart Auto-Tail ---
     setupModuleHeader(reverbPwrButton, reverbTitleLabel, juce::String::fromUTF8(u8"4. LUSH REVERB (KHÔNG GIAN)"));
     reverbPwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
@@ -121,7 +166,39 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
             updateAllUI();
         }
     };
-    setupSlider(reverbSizeSlider, reverbSizeLabel, "Size", 0.0, 100.0, 1.0, 65.0, "%");
+
+    reverbSyncToggle.setTooltip(juce::String::fromUTF8(u8"Tự động tính toán đuôi vang (Decay) khép lại chuẩn xác cuối ô nhịp theo Tempo bài hát, giúp giọng bay bổng mà không bao giờ đè mờ câu hát tiếp theo"));
+    reverbSyncToggle.onClick = [this] {
+        if (dspProcessor != nullptr) {
+            dspProcessor->setReverbBpmSync(!dspProcessor->isReverbBpmSync());
+            updateAllUI();
+        }
+    };
+    contentContainer->addAndMakeVisible(reverbSyncToggle);
+
+    reverbBarCombo.addItem(juce::String::fromUTF8(u8"1/2 Bar (Fast Rap / EDM)"), 1);
+    reverbBarCombo.addItem(juce::String::fromUTF8(u8"1 Bar (Sạch Studio ⭐)"), 2);
+    reverbBarCombo.addItem(juce::String::fromUTF8(u8"2 Bars (Dạt Dào Ballad)"), 3);
+    reverbBarCombo.addItem(juce::String::fromUTF8(u8"4 Bars (Không Gian Rộng)"), 4);
+    reverbBarCombo.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff1e293b));
+    reverbBarCombo.setColour(juce::ComboBox::textColourId, juce::Colour(0xfff8fafc));
+    reverbBarCombo.onChange = [this] {
+        if (dspProcessor != nullptr) {
+            int sel = reverbBarCombo.getSelectedId() - 1;
+            if (sel >= 0 && sel <= 3) {
+                dspProcessor->setReverbBarLength(static_cast<TempoSyncEngine::ReverbBarLength>(sel));
+                updateAllUI();
+            }
+        }
+    };
+    contentContainer->addAndMakeVisible(reverbBarCombo);
+
+    reverbDecayInfoLabel.setFont(juce::FontOptions(9.5f, juce::Font::bold));
+    reverbDecayInfoLabel.setColour(juce::Label::textColourId, juce::Colour(0xff38bdf8));
+    reverbDecayInfoLabel.setJustificationType(juce::Justification::centredLeft);
+    contentContainer->addAndMakeVisible(reverbDecayInfoLabel);
+
+    setupSlider(reverbSizeSlider, reverbSizeLabel, "Room Size", 0.0, 100.0, 1.0, 65.0, "%");
     reverbSizeSlider.onValueChange = [this] {
         if (dspProcessor != nullptr) dspProcessor->setReverbSize(static_cast<float>(reverbSizeSlider.getValue() * 0.01));
     };
@@ -134,7 +211,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         if (dspProcessor != nullptr) dspProcessor->setReverbWetMix(static_cast<float>(reverbWetSlider.getValue() * 0.01));
     };
 
-    // --- 5. Stereo Delay ---
+    // --- 5. Stereo Delay Module & Smart BPM Sync ---
     setupModuleHeader(delayPwrButton, delayTitleLabel, juce::String::fromUTF8(u8"5. STEREO DELAY / ECHO"));
     delayPwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
@@ -142,6 +219,40 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
             updateAllUI();
         }
     };
+
+    delaySyncToggle.setTooltip(juce::String::fromUTF8(u8"Khóa thời gian nhại Delay chính xác theo phân đoạn phách Tempo bài hát (1/4, 1/8Dotted, 1/8, 1/8Triplet) giúp tiếng nhại nảy tanh tách đúng nhịp trống"));
+    delaySyncToggle.onClick = [this] {
+        if (dspProcessor != nullptr) {
+            dspProcessor->setDelayBpmSync(!dspProcessor->isDelayBpmSync());
+            updateAllUI();
+        }
+    };
+    contentContainer->addAndMakeVisible(delaySyncToggle);
+
+    delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/4 Note (500ms @ 120)"), 1);
+    delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/8D Dotted (375ms ⭐)"), 2);
+    delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/8 Note (250ms @ 120)"), 3);
+    delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/8T Triplet (167ms)"), 4);
+    delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/16 Note (125ms)"), 5);
+    delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/2 Note (1000ms)"), 6);
+    delaySubdivisionCombo.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff1e293b));
+    delaySubdivisionCombo.setColour(juce::ComboBox::textColourId, juce::Colour(0xfff8fafc));
+    delaySubdivisionCombo.onChange = [this] {
+        if (dspProcessor != nullptr) {
+            int sel = delaySubdivisionCombo.getSelectedId() - 1;
+            if (sel >= 0 && sel <= 5) {
+                dspProcessor->setDelaySubdivision(static_cast<TempoSyncEngine::DelaySubdivision>(sel));
+                updateAllUI();
+            }
+        }
+    };
+    contentContainer->addAndMakeVisible(delaySubdivisionCombo);
+
+    delayTimeInfoLabel.setFont(juce::FontOptions(9.5f, juce::Font::bold));
+    delayTimeInfoLabel.setColour(juce::Label::textColourId, juce::Colour(0xff38bdf8));
+    delayTimeInfoLabel.setJustificationType(juce::Justification::centredLeft);
+    contentContainer->addAndMakeVisible(delayTimeInfoLabel);
+
     setupSlider(delayTimeSlider, delayTimeLabel, "Time", 40.0, 800.0, 5.0, 260.0, " ms");
     delayTimeSlider.onValueChange = [this] {
         if (dspProcessor != nullptr) dspProcessor->setDelayTimeMs(static_cast<float>(delayTimeSlider.getValue()));
@@ -181,6 +292,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
 BuiltInDspComponent::~BuiltInDspComponent()
 {
     stopTimer();
+    graphManager.getTempoSyncEngine().removeChangeListener(this);
     if (dspProcessor != nullptr)
         dspProcessor->removeChangeListener(this);
 }
@@ -225,6 +337,9 @@ void BuiltInDspComponent::updateAllUI()
 {
     if (dspProcessor == nullptr) return;
 
+    const double currentBpm = graphManager.getTempoSyncEngine().getBpm();
+    bpmValueLabel.setText(juce::String(static_cast<int>(std::round(currentBpm))) + " BPM", juce::dontSendNotification);
+
     // Gate
     const bool gEn = dspProcessor->isGateEnabled();
     gatePwrButton.setButtonText(gEn ? "ON" : "OFF");
@@ -251,15 +366,58 @@ void BuiltInDspComponent::updateAllUI()
     const bool rEn = dspProcessor->isReverbEnabled();
     reverbPwrButton.setButtonText(rEn ? "ON" : "OFF");
     reverbPwrButton.setColour(juce::TextButton::buttonColourId, rEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
-    reverbSizeSlider.setValue(dspProcessor->getReverbSize() * 100.0, juce::dontSendNotification);
-    reverbDampSlider.setValue(dspProcessor->getReverbDamp() * 100.0, juce::dontSendNotification);
+    
+    const bool rSync = dspProcessor->isReverbBpmSync();
+    reverbSyncToggle.setButtonText(rSync ? juce::String::fromUTF8(u8"⚡ AUTO-TAIL") : juce::String::fromUTF8(u8"TAIL: MANUAL"));
+    reverbSyncToggle.setColour(juce::TextButton::buttonColourId, rSync ? juce::Colour(0xff0284c7) : juce::Colour(0xff1e293b));
+    reverbSyncToggle.setColour(juce::TextButton::textColourOffId, rSync ? juce::Colours::white : juce::Colour(0xff94a3b8));
+
+    reverbBarCombo.setVisible(rSync);
+    reverbDecayInfoLabel.setVisible(rSync);
+    reverbSizeSlider.setVisible(!rSync);
+    reverbSizeLabel.setVisible(!rSync);
+    reverbDampSlider.setVisible(!rSync);
+    reverbDampLabel.setVisible(!rSync);
+
+    if (rSync)
+    {
+        reverbBarCombo.setSelectedId(static_cast<int>(dspProcessor->getReverbBarLength()) + 1, juce::dontSendNotification);
+        float decaySec = TempoSyncEngine::calculateReverbDecaySec(currentBpm, dspProcessor->getReverbBarLength());
+        reverbDecayInfoLabel.setText(juce::String::formatted(u8"⏱️ Đuôi: %.2fs (%s)", decaySec, (const char*)TempoSyncEngine::getBarLengthName(dspProcessor->getReverbBarLength()).toUTF8()), juce::dontSendNotification);
+    }
+    else
+    {
+        reverbSizeSlider.setValue(dspProcessor->getReverbSize() * 100.0, juce::dontSendNotification);
+        reverbDampSlider.setValue(dspProcessor->getReverbDamp() * 100.0, juce::dontSendNotification);
+    }
     reverbWetSlider.setValue(dspProcessor->getReverbWetMix() * 100.0, juce::dontSendNotification);
 
     // Delay
     const bool dEn = dspProcessor->isDelayEnabled();
     delayPwrButton.setButtonText(dEn ? "ON" : "OFF");
     delayPwrButton.setColour(juce::TextButton::buttonColourId, dEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
-    delayTimeSlider.setValue(dspProcessor->getDelayTimeMs(), juce::dontSendNotification);
+
+    const bool dSync = dspProcessor->isDelayBpmSync();
+    delaySyncToggle.setButtonText(dSync ? juce::String::fromUTF8(u8"⚡ BPM SYNC") : juce::String::fromUTF8(u8"SYNC: MANUAL"));
+    delaySyncToggle.setColour(juce::TextButton::buttonColourId, dSync ? juce::Colour(0xff0284c7) : juce::Colour(0xff1e293b));
+    delaySyncToggle.setColour(juce::TextButton::textColourOffId, dSync ? juce::Colours::white : juce::Colour(0xff94a3b8));
+
+    delaySubdivisionCombo.setVisible(dSync);
+    delayTimeInfoLabel.setVisible(dSync);
+    delayTimeSlider.setVisible(!dSync);
+    delayTimeLabel.setVisible(!dSync);
+
+    if (dSync)
+    {
+        delaySubdivisionCombo.setSelectedId(static_cast<int>(dspProcessor->getDelaySubdivision()) + 1, juce::dontSendNotification);
+        float delayMs = TempoSyncEngine::calculateDelayTimeMs(currentBpm, dspProcessor->getDelaySubdivision());
+        delayTimeInfoLabel.setText(juce::String::formatted(u8"⏱️ Nhại: %.0f ms (%s)", delayMs, (const char*)TempoSyncEngine::getSubdivisionName(dspProcessor->getDelaySubdivision()).toUTF8()), juce::dontSendNotification);
+    }
+    else
+    {
+        delayTimeSlider.setValue(dspProcessor->getDelayTimeMs(), juce::dontSendNotification);
+    }
+
     delayFeedbackSlider.setValue(dspProcessor->getDelayFeedback() * 100.0, juce::dontSendNotification);
     delayWetSlider.setValue(dspProcessor->getDelayWetMix() * 100.0, juce::dontSendNotification);
 
@@ -297,7 +455,7 @@ void BuiltInDspComponent::resized()
     viewport.setBounds(getLocalBounds());
 
     const int contentW = std::max(180, getWidth() - 12);
-    const int totalContentH = 720;
+    const int totalContentH = 780;
     contentContainer->setBounds(0, 0, contentW, totalContentH);
 
     int y = 4;
@@ -307,10 +465,18 @@ void BuiltInDspComponent::resized()
     presetComboBox.setBounds(6, y, contentW - 12, 24);
     y += 28;
 
+    // Global Tempo Control Bar
+    bpmTitleLabel.setBounds(6, y + 2, 44, 18);
+    bpmValueLabel.setBounds(50, y + 1, 56, 20);
+    bpmDownBtn.setBounds(110, y + 1, 18, 20);
+    bpmUpBtn.setBounds(130, y + 1, 18, 20);
+    tapTempoBtn.setBounds(152, y + 1, contentW - 158, 20);
+    y += 26;
+
     factoryResetButton.setBounds(6, y, contentW - 12, 20);
     y += 26;
 
-    auto layoutModule = [&](juce::TextButton& pwr, juce::Label& title, auto&& addControlsFunc, int moduleH)
+    auto layoutModule = [&](juce::TextButton& pwr, juce::Label& title, auto&& addControlsFunc)
     {
         pwr.setBounds(6, y + 2, 32, 18);
         title.setBounds(42, y + 2, contentW - 46, 18);
@@ -324,7 +490,7 @@ void BuiltInDspComponent::resized()
         gateThreshLabel.setBounds(8, y, 70, 16);
         gateThreshSlider.setBounds(6, y + 16, contentW - 12, 20);
         y += 38;
-    }, 60);
+    });
 
     // 2. EQ
     layoutModule(eqPwrButton, eqTitleLabel, [&] {
@@ -339,7 +505,7 @@ void BuiltInDspComponent::resized()
         eqHighLabel.setBounds(8, y, 90, 14);
         eqHighSlider.setBounds(6, y + 14, contentW - 12, 18);
         y += 34;
-    }, 125);
+    });
 
     // 3. Comp
     layoutModule(compPwrButton, compTitleLabel, [&] {
@@ -354,28 +520,56 @@ void BuiltInDspComponent::resized()
         compMakeupLabel.setBounds(8, y, 70, 14);
         compMakeupSlider.setBounds(6, y + 14, contentW - 12, 18);
         y += 34;
-    }, 125);
+    });
 
-    // 4. Reverb
+    // 4. Reverb & Smart Auto-Tail
     layoutModule(reverbPwrButton, reverbTitleLabel, [&] {
-        reverbSizeLabel.setBounds(8, y, 70, 14);
-        reverbSizeSlider.setBounds(6, y + 14, contentW - 12, 18);
-        y += 34;
+        reverbSyncToggle.setBounds(6, y, contentW - 12, 20);
+        y += 24;
 
-        reverbDampLabel.setBounds(8, y, 70, 14);
-        reverbDampSlider.setBounds(6, y + 14, contentW - 12, 18);
-        y += 34;
+        const bool rSync = dspProcessor ? dspProcessor->isReverbBpmSync() : true;
+        if (rSync)
+        {
+            reverbBarCombo.setBounds(6, y, contentW - 12, 22);
+            y += 24;
+            reverbDecayInfoLabel.setBounds(8, y, contentW - 16, 16);
+            y += 20;
+        }
+        else
+        {
+            reverbSizeLabel.setBounds(8, y, 70, 14);
+            reverbSizeSlider.setBounds(6, y + 14, contentW - 12, 18);
+            y += 34;
+
+            reverbDampLabel.setBounds(8, y, 70, 14);
+            reverbDampSlider.setBounds(6, y + 14, contentW - 12, 18);
+            y += 34;
+        }
 
         reverbWetLabel.setBounds(8, y, 70, 14);
         reverbWetSlider.setBounds(6, y + 14, contentW - 12, 18);
         y += 34;
-    }, 125);
+    });
 
-    // 5. Delay
+    // 5. Delay & Smart BPM Sync
     layoutModule(delayPwrButton, delayTitleLabel, [&] {
-        delayTimeLabel.setBounds(8, y, 70, 14);
-        delayTimeSlider.setBounds(6, y + 14, contentW - 12, 18);
-        y += 34;
+        delaySyncToggle.setBounds(6, y, contentW - 12, 20);
+        y += 24;
+
+        const bool dSync = dspProcessor ? dspProcessor->isDelayBpmSync() : true;
+        if (dSync)
+        {
+            delaySubdivisionCombo.setBounds(6, y, contentW - 12, 22);
+            y += 24;
+            delayTimeInfoLabel.setBounds(8, y, contentW - 16, 16);
+            y += 20;
+        }
+        else
+        {
+            delayTimeLabel.setBounds(8, y, 70, 14);
+            delayTimeSlider.setBounds(6, y + 14, contentW - 12, 18);
+            y += 34;
+        }
 
         delayFeedbackLabel.setBounds(8, y, 70, 14);
         delayFeedbackSlider.setBounds(6, y + 14, contentW - 12, 18);
@@ -384,14 +578,14 @@ void BuiltInDspComponent::resized()
         delayWetLabel.setBounds(8, y, 70, 14);
         delayWetSlider.setBounds(6, y + 14, contentW - 12, 18);
         y += 34;
-    }, 125);
+    });
 
     // 6. Limiter
     layoutModule(limiterPwrButton, limiterTitleLabel, [&] {
         limiterThreshLabel.setBounds(8, y, 70, 14);
         limiterThreshSlider.setBounds(6, y + 14, contentW - 12, 18);
         y += 34;
-    }, 60);
+    });
 
-    contentContainer->setSize(contentW, y + 10);
+    contentContainer->setSize(contentW, y + 12);
 }

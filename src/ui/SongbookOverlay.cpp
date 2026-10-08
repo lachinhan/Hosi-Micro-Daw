@@ -519,7 +519,12 @@ void SongbookOverlay::applySelectedTone(const juce::String& toneStr)
         onApplyTone(root, isMinor ? KeyDetector::ScaleType::Minor : KeyDetector::ScaleType::Major, song.title);
     }
 
-    showToast(juce::String::fromUTF8(u8"Đã đồng bộ Tone [") + toneStr + juce::String::fromUTF8(u8"] bài [") + song.title + juce::String::fromUTF8(u8"] vào Auto-Tune!"));
+    if (onApplyTempo && song.tempo > 0)
+    {
+        onApplyTempo(static_cast<double>(song.tempo), song.title);
+    }
+
+    showToast(juce::String::fromUTF8(u8"Đã đồng bộ Tone [") + toneStr + juce::String::fromUTF8(u8"] (Tempo: ") + juce::String(song.tempo) + juce::String::fromUTF8(u8" BPM) bài [") + song.title + juce::String::fromUTF8(u8"] vào Auto-Tune!"));
 }
 
 void SongbookOverlay::showToast(const juce::String& msg)

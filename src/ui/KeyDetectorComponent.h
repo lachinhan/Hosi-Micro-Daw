@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "../audio/BeatPlayerAudioProcessor.h"
 #include "../audio/GraphManager.h"
+#include "../audio/TempoSyncEngine.h"
 
 enum class TransportIconType
 {
@@ -119,6 +120,7 @@ public:
 
     void syncKeyToPitchPlugin();
     void showManualKeySelectMenu();
+    void showBpmSettingsMenu();
     void applyKeyToAutoTune(int rootNote, KeyDetector::ScaleType scale, const juce::String& sourceName, bool showNotificationPopup = true);
 
 private:
@@ -169,6 +171,10 @@ private:
     juce::TextButton syncToAutoTuneButton;
     juce::TextButton sourceToggleButton;
     juce::TextButton manualKeyButton;
+
+    // Tempo (BPM) & Tap Tempo Buttons
+    juce::TextButton bpmButton{ "120 BPM" };
+    juce::TextButton tapTempoButton{ "TAP" };
 
     // File Chooser for Beat
     std::unique_ptr<juce::FileChooser> fileChooser;

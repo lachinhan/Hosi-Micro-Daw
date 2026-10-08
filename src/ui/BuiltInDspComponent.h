@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "../audio/BuiltInDspAudioProcessor.h"
 #include "../audio/GraphManager.h"
+#include "../audio/TempoSyncEngine.h"
 
 class BuiltInDspComponent : public juce::Component, public juce::Timer, public juce::ChangeListener
 {
@@ -30,6 +31,13 @@ private:
     juce::ComboBox presetComboBox;
     juce::TextButton factoryResetButton{ "RESET" };
 
+    // Global Tempo (BPM) Bar
+    juce::Label bpmTitleLabel;
+    juce::Label bpmValueLabel;
+    juce::TextButton bpmDownBtn{ "-" };
+    juce::TextButton bpmUpBtn{ "+" };
+    juce::TextButton tapTempoBtn{ "TAP" };
+
     // --- 1. Noise Gate Module ---
     juce::TextButton gatePwrButton{ "PWR" };
     juce::Label gateTitleLabel;
@@ -50,15 +58,21 @@ private:
     juce::Label compThreshLabel, compRatioLabel, compMakeupLabel;
     float compGrCached{ 0.0f };
 
-    // --- 4. Lush Reverb Module ---
+    // --- 4. Lush Reverb Module & Smart Auto-Tail ---
     juce::TextButton reverbPwrButton{ "PWR" };
     juce::Label reverbTitleLabel;
+    juce::TextButton reverbSyncToggle{ "⚡ AUTO-TAIL" };
+    juce::ComboBox reverbBarCombo;
+    juce::Label reverbDecayInfoLabel;
     juce::Slider reverbSizeSlider, reverbDampSlider, reverbWetSlider;
     juce::Label reverbSizeLabel, reverbDampLabel, reverbWetLabel;
 
-    // --- 5. Stereo Delay Module ---
+    // --- 5. Stereo Delay Module & Smart BPM Sync ---
     juce::TextButton delayPwrButton{ "PWR" };
     juce::Label delayTitleLabel;
+    juce::TextButton delaySyncToggle{ "⚡ BPM SYNC" };
+    juce::ComboBox delaySubdivisionCombo;
+    juce::Label delayTimeInfoLabel;
     juce::Slider delayTimeSlider, delayFeedbackSlider, delayWetSlider;
     juce::Label delayTimeLabel, delayFeedbackLabel, delayWetLabel;
 

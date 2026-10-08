@@ -23,6 +23,8 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
         beatPlayer->addChangeListener(this);
     }
 
+    graphManager.getTempoSyncEngine().addChangeListener(this);
+
     // --- Load Beat Button ---
     loadBeatButton.setButtonText(juce::String::fromUTF8(u8"NẠP BEAT"));
     loadBeatButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
@@ -184,6 +186,22 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
     manualKeyButton.onClick = [this] { showManualKeySelectMenu(); };
     addAndMakeVisible(manualKeyButton);
 
+    // --- Tempo / BPM Button & Tap Tempo ---
+    bpmButton.setTooltip(juce::String::fromUTF8(u8"Tempo bài hát (BPM). Click để đổi tốc độ chuẩn theo thể loại hoặc nhập số"));
+    bpmButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    bpmButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff59e0b)); // Gold
+    bpmButton.onClick = [this] { showBpmSettingsMenu(); };
+    addAndMakeVisible(bpmButton);
+
+    tapTempoButton.setTooltip(juce::String::fromUTF8(u8"Nhấp chuột 2-4 lần theo nhịp bài hát để định lượng Tempo (Tap Tempo)"));
+    tapTempoButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff312e81)); // Dark indigo
+    tapTempoButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffa5b4fc));
+    tapTempoButton.onClick = [this] {
+        graphManager.getTempoSyncEngine().tapTempo();
+        updateKeyUI();
+    };
+    addAndMakeVisible(tapTempoButton);
+
     // --- Source Toggle ---
     sourceToggleButton.setButtonText(juce::String::fromUTF8(u8"NGUỒN: BEAT"));
     sourceToggleButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
@@ -214,6 +232,7 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
 KeyDetectorComponent::~KeyDetectorComponent()
 {
     stopTimer();
+    graphManager.getTempoSyncEngine().removeChangeListener(this);
     if (beatPlayer != nullptr)
     {
         beatPlayer->removeChangeListener(this);
@@ -290,6 +309,12 @@ void KeyDetectorComponent::updateTransportUI()
 
 void KeyDetectorComponent::updateKeyUI()
 {
+    const double currentBpm = graphManager.getTempoSyncEngine().getBpm();
+    bpmButton.setButtonText(juce::String(static_cast<int>(std::round(currentBpm))) + " BPM");
+
+    // Real-Time Beat Estimation Auto-Sync check
+    auto beatRes = graphManager.getTempoSyncEngine().getDetectedBeatResult();
+
     if (beatPlayer == nullptr) return;
 
     auto result = beatPlayer->getDetectedKey();
@@ -328,6 +353,68 @@ void KeyDetectorComponent::updateKeyUI()
     {
         smoothedChroma[i] = smoothedChroma[i] * 0.75f + result.chromaProfile[i] * 0.25f;
     }
+}
+
+void KeyDetectorComponent::showBpmSettingsMenu()
+{
+    juce::PopupMenu menu;
+    menu.addSectionHeader(juce::String::fromUTF8(u8"CÀI ĐẶT TEMPO / BPM (SMART SYNC DELAY & REVERB)"));
+
+    menu.addItem(1, juce::String::fromUTF8(u8"⚡ 65 BPM - Bolero Chậm Rãi"));
+    menu.addItem(2, juce::String::fromUTF8(u8"⚡ 75 BPM - Ballad Trữ Tình (Tiêu Chuẩn)"));
+    menu.addItem(3, juce::String::fromUTF8(u8"⚡ 90 BPM - R&B / Acoustic Pop"));
+    menu.addItem(4, juce::String::fromUTF8(u8"⚡ 105 BPM - Pop Dance / Disco"));
+    menu.addItem(5, juce::String::fromUTF8(u8"⚡ 120 BPM - Nhạc Trẻ Sôi Động ⭐"));
+    menu.addItem(6, juce::String::fromUTF8(u8"⚡ 128 BPM - Vinahouse / Remix Club 🔥"));
+    menu.addItem(7, juce::String::fromUTF8(u8"⚡ 132 BPM - EDM / Electro Festival"));
+    menu.addItem(8, juce::String::fromUTF8(u8"⚡ 140 BPM - Trap / Hip-Hop Fast"));
+
+    menu.addSeparator();
+    menu.addItem(100, juce::String::fromUTF8(u8"✏️ Nhập Số BPM Tùy Chỉnh..."));
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&bpmButton), [this](int result) {
+        if (result == 0) return;
+
+        auto& engine = graphManager.getTempoSyncEngine();
+        switch (result)
+        {
+        case 1: engine.setBpm(65.0, "Bolero Preset"); break;
+        case 2: engine.setBpm(75.0, "Ballad Preset"); break;
+        case 3: engine.setBpm(90.0, "R&B Preset"); break;
+        case 4: engine.setBpm(105.0, "Pop Dance Preset"); break;
+        case 5: engine.setBpm(120.0, "Standard 120"); break;
+        case 6: engine.setBpm(128.0, "Remix Preset"); break;
+        case 7: engine.setBpm(132.0, "EDM Preset"); break;
+        case 8: engine.setBpm(140.0, "Trap Preset"); break;
+        case 100:
+        {
+            auto* dialog = new juce::AlertWindow(
+                juce::String::fromUTF8(u8"Nhập Tempo (BPM)"),
+                juce::String::fromUTF8(u8"Nhập tốc độ bài hát từ 40 đến 240 BPM:"),
+                juce::AlertWindow::QuestionIcon
+            );
+            dialog->addTextEditor("bpm", juce::String(static_cast<int>(std::round(engine.getBpm()))));
+            dialog->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+            dialog->addButton(juce::String::fromUTF8(u8"Hủy"), 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+            dialog->enterModalState(true, juce::ModalCallbackFunction::create([this, dialog](int modalResult) {
+                if (modalResult == 1)
+                {
+                    double val = dialog->getTextEditorContents("bpm").getDoubleValue();
+                    if (val >= 40.0 && val <= 260.0)
+                    {
+                        graphManager.getTempoSyncEngine().setBpm(val, "User Custom Input");
+                        updateKeyUI();
+                    }
+                }
+                delete dialog;
+            }));
+            break;
+        }
+        default: break;
+        }
+        updateKeyUI();
+    });
 }
 
 void KeyDetectorComponent::showManualKeySelectMenu()
@@ -731,21 +818,23 @@ void KeyDetectorComponent::resized()
     // Reserve right side for Chroma Visualizer
     area.removeFromRight(150);
 
-    // Middle-Right Section: Key Detection Controls (~290px)
-    auto keySection = area.removeFromRight(290);
+    // Middle-Right Section: Key Detection & Tempo Controls (~330px)
+    auto keySection = area.removeFromRight(330);
 
-    // Top sub-row in key section: Title, Confidence, and Auto-Push Toggle
-    keyTitleLabel.setBounds(keySection.getX(), area.getY() + 2, 82, 14);
-    confidenceLabel.setBounds(keySection.getX() + 84, area.getY() + 2, 120, 14);
-    autoPushToggle.setBounds(keySection.getX() + 208, area.getY() + 1, 80, 16);
+    // Top sub-row in key section: Title, Confidence, Auto-Push, and Tap Tempo
+    keyTitleLabel.setBounds(keySection.getX(), area.getY() + 2, 80, 14);
+    confidenceLabel.setBounds(keySection.getX() + 82, area.getY() + 2, 110, 14);
+    autoPushToggle.setBounds(keySection.getX() + 194, area.getY() + 1, 74, 16);
+    tapTempoButton.setBounds(keySection.getX() + 272, area.getY() + 1, 56, 16);
 
-    // Middle sub-row in key section: Display Label + Quick Manual Select Button
-    keyDisplayLabel.setBounds(keySection.getX(), area.getY() + 18, 175, 22);
-    manualKeyButton.setBounds(keySection.getX() + 185, area.getY() + 18, 103, 22);
+    // Middle sub-row in key section: Display Label + BPM Button + Quick Manual Select Button
+    keyDisplayLabel.setBounds(keySection.getX(), area.getY() + 18, 140, 22);
+    bpmButton.setBounds(keySection.getX() + 144, area.getY() + 18, 86, 22);
+    manualKeyButton.setBounds(keySection.getX() + 234, area.getY() + 18, 94, 22);
 
     // Bottom sub-row in key section: Sync Button + Source Toggle Button
-    syncToAutoTuneButton.setBounds(keySection.getX(), area.getY() + 42, 165, 24);
-    sourceToggleButton.setBounds(keySection.getX() + 172, area.getY() + 42, 116, 24);
+    syncToAutoTuneButton.setBounds(keySection.getX(), area.getY() + 42, 190, 24);
+    sourceToggleButton.setBounds(keySection.getX() + 196, area.getY() + 42, 132, 24);
 
     // Left Section: Beat Player Controls
     auto playerSection = area;

@@ -204,6 +204,9 @@ MainComponent::MainComponent()
             keyDetectorBar->applyKeyToAutoTune(rootNote, scale, songName);
         }
     };
+    songbookOverlay->onApplyTempo = [this](double bpm, const juce::String& songName) {
+        audioEngine.getGraphManager().getTempoSyncEngine().setBpm(bpm, songName);
+    };
 #if HOSI_PRO_EDITION
     songbookOverlay->onPlayYouTubeBeat = [this](const juce::String& songName) {
         showYouTubePlayer(true, songName);
@@ -228,6 +231,9 @@ MainComponent::MainComponent()
         {
             keyDetectorBar->applyKeyToAutoTune(rootNote, scale, songName, showNotificationPopup);
         }
+    };
+    youtubeOverlay->onApplyTempo = [this](double bpm, const juce::String& songName) {
+        audioEngine.getGraphManager().getTempoSyncEngine().setBpm(bpm, songName);
     };
     youtubeOverlay->onOpenSongbook = [this]() {
         showSongbook(true);

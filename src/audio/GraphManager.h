@@ -2,93 +2,76 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
-#include "IpcEmitterAudioProcessor.h"
-#include "BeatPlayerAudioProcessor.h"
-#include "SoundboardAudioProcessor.h"
-#include "BuiltInDspAudioProcessor.h"
-#include "AudioRecorder.h"
 #include <vector>
 #include <memory>
-#include <functional>
+#include "BuiltInDspAudioProcessor.h"
+#include "BeatPlayerAudioProcessor.h"
+#include "SoundboardAudioProcessor.h"
+#include "IpcEmitterAudioProcessor.h"
+#include "AudioRecorder.h"
+#include "TempoSyncEngine.h"
 
 class InputRouterAudioProcessor : public juce::AudioProcessor
 {
 public:
     enum class InputMode
     {
-        MonoIn1 = 0,   // Input 1 (Mic 1) -> Dual-Mono Center (L + R)
-        MonoIn2 = 1,   // Input 2 (Mic 2) -> Dual-Mono Center (L + R)
-        Stereo12 = 2   // Input 1 & 2 -> Stereo (L -> L, R -> R)
+        MonoIn1 = 0,
+        MonoIn2 = 1,
+        StereoIn12 = 2
     };
 
     InputRouterAudioProcessor()
-        : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::discreteChannels(8), true)
+        : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                           .withOutput("Output", juce::AudioChannelSet::stereo(), true))
-    {}
+    {
+    }
 
-    void prepareToPlay(double, int) override {}
+    void prepareToPlay(double /*sampleRate*/, int /*samplesPerBlock*/) override {}
     void releaseResources() override {}
+
+    void setInputMode(InputMode mode) noexcept
+    {
+        currentMode.store(mode, std::memory_order_release);
+    }
+
+    InputMode getInputMode() const noexcept
+    {
+        return currentMode.load(std::memory_order_relaxed);
+    }
+
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&) override
     {
         const int numChannels = buffer.getNumChannels();
         const int numSamples = buffer.getNumSamples();
-        if (numSamples <= 0 || numChannels <= 0)
-            return;
+        if (numSamples <= 0 || numChannels <= 0) return;
 
-        const auto mode = inputMode.load(std::memory_order_relaxed);
+        const auto mode = currentMode.load(std::memory_order_relaxed);
 
         if (mode == InputMode::MonoIn1)
         {
             if (numChannels >= 2)
             {
-                // If channel 0 is silent but channel 2 or 1 has audio (e.g. mic in input 2 / secondary ASIO pair)
-                if (buffer.getMagnitude(0, 0, numSamples) <= 0.000001f)
-                {
-                    if (numChannels > 2 && buffer.getMagnitude(2, 0, numSamples) > 0.00001f)
-                        buffer.copyFrom(0, 0, buffer, 2, 0, numSamples);
-                    else if (buffer.getMagnitude(1, 0, numSamples) > 0.00001f)
-                        buffer.copyFrom(0, 0, buffer, 1, 0, numSamples);
-                }
-                buffer.copyFrom(1, 0, buffer, 0, 0, numSamples);
+                buffer.copyFrom(1, 0, buffer.getReadPointer(0), numSamples);
             }
         }
         else if (mode == InputMode::MonoIn2)
         {
             if (numChannels >= 2)
             {
-                if (numChannels > 3 && buffer.getMagnitude(1, 0, numSamples) <= 0.000001f && buffer.getMagnitude(3, 0, numSamples) > 0.00001f)
-                    buffer.copyFrom(1, 0, buffer, 3, 0, numSamples);
-
-                buffer.copyFrom(0, 0, buffer, 1, 0, numSamples);
-                buffer.copyFrom(1, 0, buffer, 0, 0, numSamples);
-            }
-        }
-        else // Stereo12
-        {
-            if (numChannels >= 2)
-            {
-                if (numChannels >= 4 && buffer.getMagnitude(0, 0, numSamples) <= 0.000001f && buffer.getMagnitude(1, 0, numSamples) <= 0.000001f)
-                {
-                    if (buffer.getMagnitude(2, 0, numSamples) > 0.00001f || buffer.getMagnitude(3, 0, numSamples) > 0.00001f)
-                    {
-                        buffer.copyFrom(0, 0, buffer, 2, 0, numSamples);
-                        buffer.copyFrom(1, 0, buffer, 3, 0, numSamples);
-                    }
-                }
+                buffer.copyFrom(0, 0, buffer.getReadPointer(1), numSamples);
             }
         }
 
         if (recorder != nullptr && recorder->isRecording())
         {
-            recorder->pushDryMicAudio(buffer.getArrayOfReadPointers(), buffer.getNumChannels(), numSamples);
+            recorder->pushDryMicAudio(buffer.getArrayOfReadPointers(), numChannels, numSamples);
         }
     }
 
-    void setAudioRecorder(AudioRecorder* rec) noexcept { recorder = rec; }
-    void setInputMode(InputMode mode) noexcept { inputMode.store(mode, std::memory_order_release); }
-    InputMode getInputMode() const noexcept { return inputMode.load(std::memory_order_relaxed); }
+    void setAudioRecorder(class AudioRecorder* rec) noexcept { recorder = rec; }
 
-    const juce::String getName() const override { return "Input Router & Dual-Mono Center"; }
+    const juce::String getName() const override { return "Input Router"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     double getTailLengthSeconds() const override { return 0.0; }
@@ -103,8 +86,9 @@ public:
     bool hasEditor() const override { return false; }
 
 private:
-    AudioRecorder* recorder{ nullptr };
-    std::atomic<InputMode> inputMode{ InputMode::MonoIn1 };
+    std::atomic<InputMode> currentMode{ InputMode::MonoIn1 };
+    class AudioRecorder* recorder{ nullptr };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(InputRouterAudioProcessor)
 };
 
@@ -114,39 +98,31 @@ public:
     SlotGainAudioProcessor()
         : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                           .withOutput("Output", juce::AudioChannelSet::stereo(), true))
-    {}
+    {
+    }
 
     void prepareToPlay(double sampleRate, int /*samplesPerBlock*/) override
     {
-        smoothedGain.reset(sampleRate, 0.02);
+        smoothedGain.reset(sampleRate, 0.02); // 20ms smoothing
         smoothedGain.setCurrentAndTargetValue(gain.load(std::memory_order_relaxed));
     }
+
     void releaseResources() override {}
-    void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&) override
+
+    void setGain(float newGainLinear)
     {
-        const int numChannels = buffer.getNumChannels();
-        const int numSamples = buffer.getNumSamples();
-        if (numSamples <= 0 || numChannels <= 0)
-            return;
-
-        // If a mono plugin outputted to ch 0 only, mirror to ch 1 so signal stays centered stereo
-        if (numChannels >= 2)
-        {
-            const float mag0 = buffer.getMagnitude(0, 0, numSamples);
-            const float mag1 = buffer.getMagnitude(1, 0, numSamples);
-            if (mag0 > 0.000001f && mag1 <= 0.0000001f)
-            {
-                buffer.copyFrom(1, 0, buffer, 0, 0, numSamples);
-            }
-        }
-
-        const float target = gain.load(std::memory_order_relaxed);
-        smoothedGain.setTargetValue(target);
-        smoothedGain.applyGain(buffer, numSamples);
+        gain.store(newGainLinear, std::memory_order_release);
+        smoothedGain.setTargetValue(newGainLinear);
     }
 
-    void setGain(float newGain) noexcept { gain.store(newGain, std::memory_order_release); }
-    float getGain() const noexcept { return gain.load(std::memory_order_relaxed); }
+    void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&) override
+    {
+        const int numSamples = buffer.getNumSamples();
+        if (numSamples <= 0) return;
+
+        smoothedGain.setTargetValue(gain.load(std::memory_order_relaxed));
+        smoothedGain.applyGain(buffer, numSamples);
+    }
 
     const juce::String getName() const override { return "Slot Trim & Send"; }
     bool acceptsMidi() const override { return false; }
@@ -174,6 +150,7 @@ public:
     MicroDawPlayHead() = default;
 
     void setBeatPlayer(BeatPlayerAudioProcessor* player) noexcept { beatPlayer = player; }
+    void setTempoSyncEngine(TempoSyncEngine* engine) noexcept { tempoEngine = engine; }
 
     juce::Optional<PositionInfo> getPosition() const override
     {
@@ -186,8 +163,8 @@ public:
         const bool isLooping = (beatPlayer != nullptr && beatPlayer->isLooping());
         info.setIsLooping(isLooping);
         
-        constexpr double defaultBpm = 120.0;
-        info.setBpm(defaultBpm);
+        const double currentBpm = (tempoEngine != nullptr) ? tempoEngine->getBpm() : 120.0;
+        info.setBpm(currentBpm);
         info.setTimeSignature(juce::AudioPlayHead::TimeSignature{ 4, 4 });
         
         if (beatPlayer != nullptr && beatPlayer->isPlaying())
@@ -195,7 +172,7 @@ public:
             double posSec = beatPlayer->getCurrentPosition();
             info.setTimeInSeconds(posSec);
             info.setTimeInSamples(static_cast<juce::int64>(posSec * 44100.0));
-            info.setPpqPosition((posSec * defaultBpm) / 60.0);
+            info.setPpqPosition((posSec * currentBpm) / 60.0);
             info.setPpqPositionOfLastBarStart(0.0);
         }
         else
@@ -211,6 +188,7 @@ public:
 
 private:
     BeatPlayerAudioProcessor* beatPlayer{ nullptr };
+    TempoSyncEngine* tempoEngine{ nullptr };
 };
 
 struct PluginSlotData
@@ -227,7 +205,7 @@ struct PluginSlotData
     SlotGainAudioProcessor* gainProcessor{ nullptr };
 };
 
-class GraphManager : public juce::ChangeBroadcaster
+class GraphManager : public juce::ChangeBroadcaster, public juce::ChangeListener
 {
 public:
     static constexpr int DEFAULT_SLOTS = 8;
@@ -235,6 +213,8 @@ public:
 
     GraphManager();
     ~GraphManager() override;
+
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
     juce::AudioProcessorGraph& getGraph() noexcept { return *graph; }
     juce::AudioPlayHead* getPlayHead() noexcept { return &playHead; }
@@ -309,9 +289,11 @@ public:
     SoundboardAudioProcessor* getSoundboard() noexcept { return soundboardProcessor; }
     BuiltInDspAudioProcessor* getBuiltInDsp() noexcept { return builtInDspProcessor; }
     AudioRecorder& getAudioRecorder() noexcept { return audioRecorder; }
+    TempoSyncEngine& getTempoSyncEngine() noexcept { return tempoSyncEngine; }
 
 private:
     AudioRecorder audioRecorder;
+    TempoSyncEngine tempoSyncEngine;
     std::unique_ptr<juce::AudioProcessorGraph> graph;
     juce::AudioPluginFormatManager formatManager;
     juce::KnownPluginList knownPluginList;
