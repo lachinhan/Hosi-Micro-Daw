@@ -1,42 +1,63 @@
 ================================================================================
-          LIVESTREAM MICRO-DAW v2.0 - HƯỚNG DẪN SỬ DỤNG NHANH
-                    Phát triển bởi: La Chí Nhân (Hosi Prod)
-                 Website: https://lachinhan.xyz
-                 GitHub:  https://github.com/lachinhan/Hosi-Micro-Daw
+          LIVESTREAM MICRO-DAW PRO v3.x - HƯỚNG DẪN SỬ DỤNG NHANH
+                     Phát triển bởi: La Chí Nhân (Hosi Prod)
+                  Website: https://lachinhan.xyz
+                  GitHub:  https://github.com/lachinhan/Hosi-Micro-Daw
 ================================================================================
 
 1. GIỚI THIỆU TỔNG QUAN:
-   LiveStream Micro-DAW là phần mềm Host VST3 và định tuyến âm thanh độ trễ 0ms 
-   dành riêng cho Streamer, Ca sĩ hát live và Thu âm chuyên nghiệp trên Windows.
+   LiveStream Micro-DAW PRO là phần mềm Host VST3 và định tuyến âm thanh độ trễ 0ms 
+   tích hợp bộ công cụ Trí Tuệ Nhân Tạo (AI Vocal Studio) dành riêng cho Streamer, 
+   Ca sĩ hát live và Thu âm chuyên nghiệp trên Windows.
 
-2. TÍNH NĂNG NỔI BẬT:
+2. HỆ THỐNG TÍNH NĂNG AI THẾ HỆ MỚI (PRO EDITION v3.x):
+   - 🎙️ AI Vocal Profiler & Auto EQ (1-Click AI Sounding):
+     + Quét F0 chất giọng, tần số đục phòng (200-450Hz), chói gắt (5k-8.5kHz), độ thoát âm Air (9k-18kHz).
+     + 1-Click tự động tối ưu hóa EQ 3-Band theo 4 phong cách: Studio Master, Sweet Bolero, Remix Pop, Podcast.
+   - 🎵 AI Vocal Range Detector & Gợi Ý Bài Hát (Smart Song Recommendation):
+     + Đo quãng giọng thực tế thời gian thực (65Hz - 1.050Hz / C2 - C6) bằng kỹ thuật lướt giọng Siren 15s.
+     + Tự động lọc danh sách bài hát vừa giọng từ kho 1.033+ bài, chấm điểm Fit Score và gợi ý Tone tối ưu.
+     + 1-Click Hát Ngay: Tự động nạp Tone sang Auto-Tune và mở Beat YouTube.
+   - 🛡️ AI Shield Denoise & Room De-reverb (16-Band Zero-Latency Filterbank):
+     + Khử ồn quạt gió, tiếng ve, còi xe và triệt tiêu dội vang phòng không tiêu âm với độ trễ 0ms.
+     + Phím tắt nhanh 1-chạm [🛡️ AI SHIELD] trên Top Bar với 4 cấp độ khử ồn.
+   - ⏱️ Smart BPM-Synced Reverb & Delay:
+     + Tự động đồng bộ thời gian Delay và đuôi Reverb theo đúng Tempo (BPM) bài hát.
+     + Đồng bộ Host PlayHead cho các VST3 bên thứ ba (Valhalla, Soundtoys, FabFilter).
+   - 📺 Trình Phát YouTube Karaoke Chuyên Nghiệp (PRO):
+     + Chặn quảng cáo, dò Tone YouTube 1-chạm nạp thẳng vào Auto-Tune.
+     + Lên/Hạ Tone Auto-Tune khi nhạc chuyển tone: [MOD MIC: -1, 0, +1, +2].
+     + Đổi Tone Beat YouTube theo thời gian thực: [BEAT: -3..+3].
+     + Song ca Nam - Nữ 1-chạm: [♂ NAM] / [♀ NỮ].
+
+3. CÁC TÍNH NĂNG NỀN TẢNG STUDIO & LIVESTREAM:
    - ⚡ Tự động dò Tone beat nhạc & giọng hát bằng công nghệ Chroma/YIN DSP.
    - ⚡ Nút [⚡ AUTO]: Tự động nạp Tone đã chốt sang Auto-Tune Pro không cần thao tác tay.
    - ⚡ Truyền âm thanh độ trễ 0ms sang OBS Studio qua LiveStream OBS Receiver (IPC).
    - ⚡ Hỗ trợ nạp đầy đủ chuỗi VST3: Auto-Tune, FabFilter, Reverb, Delay,...
-   - 📺 TRÌNH PHÁT YOUTUBE KARAOKE (PRO EDITION):
-     + Dò Tone YouTube 1-chạm nạp thẳng vào Auto-Tune.
-     + Lên/Hạ Tone Auto-Tune khi nhạc chuyển tone: [MOD MIC: -1, 0, +1, +2].
-     + Đổi Tone Beat YouTube theo thời gian thực: [BEAT: -3..+3].
-     + Song ca Nam - Nữ 1-chạm: [♂ NAM] / [♀ NỮ].
-   - ⌨ PHÍM TẮT NHANH KHI HÁT TRỰC TIẾP (PRO):
-     + Phím ']' hoặc 'PageUp' : Lên +1 Tone Auto-Tune (khi bài hát lên tone)
-     + Phím '[' hoặc 'PageDown': Hạ -1 Tone Auto-Tune
-     + Phím '+' / '-'         : Tăng / Giảm Tone Beat YouTube
-     + Phím '0'               : Trả về Tone chuẩn ban đầu
-     + Phím 'M' hoặc '1'      : Chuyển Auto-Tune sang Tone Nam
-     + Phím 'F' hoặc '2'      : Chuyển Auto-Tune sang Tone Nữ
-     + Phím 'D' hoặc 'Tab'    : Đảo qua lại Tone Nam <-> Nữ
+   - ⚡ Smart Auto-Ducking: Tự động hạ nhỏ nhạc nền khi nói chuyện.
+   - ⚡ Sổ Tone Bài Hát 1.033+ bài hát Việt Nam có tìm kiếm thông minh và lưu Tone cá nhân.
+   - ⚡ Soundboard 8 nút pad hiệu ứng âm thanh đổi tên và nạp file MP3/WAV riêng biệt.
 
-3. HƯỚNG DẪN CÀI ĐẶT & KẾT NỐI OBS:
-   Bước 1: Chạy file cài đặt "LiveStream_Micro_DAW_Setup.exe" hoặc giải nén bản Portable.
-   Bước 2: Mở phần mềm "LiveStream Micro-DAW", chọn Soundcard / Driver ASIO hoặc Windows Audio.
+4. PHÍM TẮT NHANH KHI HÁT TRỰC TIẾP:
+   - Phím ']' hoặc 'PageUp' : Lên +1 Tone Auto-Tune (khi bài hát lên tone)
+   - Phím '[' hoặc 'PageDown': Hạ -1 Tone Auto-Tune
+   - Phím '+' / '-'         : Tăng / Giảm Tone Beat YouTube
+   - Phím '0'               : Trả về Tone chuẩn ban đầu
+   - Phím 'M' hoặc '1'      : Chuyển Auto-Tune sang Tone Nam
+   - Phím 'F' hoặc '2'      : Chuyển Auto-Tune sang Tone Nữ
+   - Phím 'D' hoặc 'Tab'    : Đảo qua lại Tone Nam <-> Nữ
+   - Phím F1 / F2 / F3      : Chuyển Scene Hát Live / Giao Lưu Talk / Autotune Ép
+
+5. HƯỚNG DẪN CÀI ĐẶT & KẾT NỐI OBS:
+   Bước 1: Chạy file cài đặt "LiveStream_Micro_DAW_PRO_Setup.exe" hoặc giải nén bản Portable.
+   Bước 2: Mở phần mềm "LiveStream Micro-DAW PRO", chọn Soundcard / Driver ASIO hoặc Windows Audio.
    Bước 3: Chèn các Plugin VST3 mong muốn vào khay hiệu ứng (Insert Effects).
    Bước 4: Mở OBS Studio, thêm bộ lọc (Audio Filter) -> VST 2.x Plug-in -> Chọn "LiveStream OBS Receiver".
    Bước 5: Bật nút [IPC OBS: BẬT] trên Micro-DAW. Âm thanh chuẩn phòng thu sẽ lập tức 
            truyền thẳng sang livestream của bạn với độ trễ 0ms!
 
-4. HỖ TRỢ KỸ THUẬT & DỊCH VỤ CÀI ĐẶT:
+6. HỖ TRỢ KỸ THUẬT & DỊCH VỤ CÀI ĐẶT:
    - Hotline / Zalo: 0908.107.000 (La Chí Nhân)
    - Trợ lý AI Hướng dẫn 24/7: https://byvn.net/hosiguide
    - Kho bài viết & Plugin: https://lachinhan.xyz

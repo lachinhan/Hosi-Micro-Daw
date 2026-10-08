@@ -20,6 +20,38 @@ Một hệ thống **Micro-DAW chuyên dụng cho Livestream & Hát Live** siêu
 
 ## 🌟 Tính Năng Nổi Bật (Key Features)
 
+### 🤖 HỆ THỐNG TÍNH NĂNG AI THẾ HỆ MỚI (PRO EDITION v3.x ⭐)
+
+1. **🎙️ AI Vocal Profiler & Auto EQ Thông Minh (1-Click AI Sounding)**:
+   - **Tự động đo đạc âm sắc**: Hát hoặc nói một câu mẫu vào Micro, thuật toán Spectral Formant Analysis tự động quét: F0 chất giọng, tần số đục phòng (200 - 450Hz), độ chói sibilance (5k - 8.5kHz) và độ thoát âm (Air 9k - 18kHz).
+   - **1-Click Tối Ưu Hóa EQ**: Sinh 4 phong cách phối âm lý tưởng riêng biệt (*Studio Master, Sweet Bolero, Remix Pop, Podcast Streamer*), tự động nạp thông số chuẩn vào Studio EQ giúp giọng ấm, sáng và trong trẻo như phòng thu.
+
+2. **🎵 AI Vocal Range Detector & Gợi Ý Bài Hát Phù Hợp (Smart Song Recommendation)**:
+   - **Đo quãng giọng thực tế thời gian thực (`VocalRangeDetector`)**: Thuật toán Pitch Tracking (Autocorrelation + Parabolic Interpolation) đo F0 từ 65 Hz (`C2`) đến 1.050 Hz (`C6`).
+   - **Quét giọng 15s (Vocal Siren Glissando)**: Ngân lướt từ nốt trầm nhất ("Ồ...") lên nốt cao nhất ("Í..."), thanh Piano Roll tự động mở rộng theo thời gian thực và phân loại chất giọng (*Nam Trầm, Nam Cao, Nữ Trung, Nữ Cao*).
+   - **Smart Database Matching (1.033+ Bài Hát)**: Lọc danh mục `[ 🎯 Gợi Ý Vừa Giọng AI ]`, tính điểm tương thích Fit Score (100% Vừa Vặn, 95% Rất Hợp) và tự động gợi ý hạ/tăng Tone: *"🎯 Hạ -2 Tone để nốt cao nhất không bị với"*.
+   - **1-Click Hát Ngay**: Đồng bộ thẳng Key & Scale vào Auto-Tune và mở Beat YouTube tức thì.
+
+3. **🛡️ AI Real-Time Denoise & Room De-reverb Shield (DeepFilter AI Shield)**:
+   - **Khử ồn & triệt tiêu dội phòng siêu nhẹ**: Bộ lọc IIR Biquad 16-band zero-latency triệt tiêu tiếng quạt gió, tiếng ve, còi xe, bàn phím và tiếng vang dội của phòng chưa tiêu âm mà **không làm méo tiếng giọng hát**.
+   - **Phím tắt nhanh 1 chạm trên Top Bar `[ 🛡️ AI SHIELD ]`**: Click trái bật/tắt nhanh, click phải chọn 4 cấp độ khử ồn (40%, 75%, 90%, 100%).
+
+4. **⏱️ Smart BPM-Synced Reverb & Delay (Đồng Bộ Không Gian Theo Nhịp Phách)**:
+   - **Tự động dò Tempo (BPM)**: Nhận diện BPM từ Sổ Tone, YouTube Player, nút `[ TAP ]` hoặc bộ dò nhịp phổ âm Spectral Flux Onset.
+   - **Auto-Delay theo phách**: Tự tính chính xác thời gian delay: $\text{Delay (ms)} = \frac{60.000}{\text{BPM}} \times \text{Subdivision}$ (1/4 Pop, 1/8 Dotted Ballad, 1/8 Triplet Bounce...).
+   - **Auto-Reverb Tail**: Đuôi vang (Decay) tự động khép lại đúng cuối ô nhịp (1/2 Bar, 1 Bar, 2 Bars, 4 Bars) theo $\text{Decay (sec)} = \frac{240}{\text{BPM}} \times \text{Bars}$, giọng bay bổng mà không bị đè mờ câu hát tiếp theo.
+   - **Đồng bộ VST3 bên thứ ba**: Nạp trực tiếp vào Host PlayHead (`MicroDawPlayHead`) cho Valhalla, Soundtoys EchoBoy, FabFilter.
+
+5. **📺 Trình Phát YouTube Karaoke Chuyên Nghiệp (Mini YouTube Karaoke Player)**:
+   - **Tích hợp YouTube Player trực tiếp**: Tìm kiếm và phát beat karaoke YouTube ngay trong app với giao diện tối ưu không quảng cáo (**`🛡️ CHẶN QC / LIVE`**).
+   - **Dò Tone YouTube 1-Chạm (`🎯 DÒ TONE`)**: Tự động nhận diện bài hát và Tone chuẩn từ cơ sở dữ liệu 1.033+ bài hát.
+   - **Lên/Hạ Tone Auto-Tune Khi Nhạc Chuyển Tone (`MOD MIC: [-1] [0] [+1] [+2]`)**: Khi bài hát lên tone ở điệp khúc, bấm phím tắt để nâng Tone Auto-Tune khớp nốt mới, **giữ nguyên 100% beat YouTube không bị méo tiếng**.
+   - **Song Ca Nam - Nữ Tức Thời (`[♂ NAM]` / `[♀ NỮ]`)**: Đổi Tone Auto-Tune tức thì (độ trễ 0ms) khi đến lượt Nam hoặc Nữ hát.
+
+---
+
+### 🎛️ CÁC TÍNH NĂNG NỀN TẢNG STUDIO & LIVESTREAM
+
 - **🎵 Tự Động Dò Tone Nhạc Beat & Micro (Auto Key & Scale Detection)**: Tích hợp thuật toán phân tích phổ âm Harmonic Chromagram kết hợp tương quan Krumhansl-Schmuckler để tự động nhận diện chính xác Tone (C Major, F# Minor...) của bài hát/beat karaoke hoặc giọng hát mộc từ Micro theo thời gian thực.
 - **⚡ Tự Động Nạp Tone Vào Auto-Tune (Auto-Push on Lock - Nút `⚡ AUTO`)**:
   - **Chế độ Tự Động (`⚡ AUTO`)**: Khi nhạc beat chạy và thuật toán chốt Tone chính xác ($\ge 75\%$ confidence & `isLocked`), hệ thống **tự động truyền thẳng Key & Scale vào Auto-Tune Pro trong Rack** mà streamer không cần rời tay bấm chuột!
@@ -27,6 +59,7 @@ Một hệ thống **Micro-DAW chuyên dụng cho Livestream & Hát Live** siêu
 - **🤖 Trợ Lý AI Hướng Dẫn Sử Dụng Trực Tuyến 24/7**: Tích hợp trợ lý AI chuyên sâu tại [byvn.net/hosiguide](https://byvn.net/hosiguide) sẵn sàng giải đáp và hướng dẫn từng bước cài đặt VST3, OBS Studio và căn chỉnh Vocal DSP.
 - **🎛️ Nút Chọn Tone Thủ Công (24 Cung Giọng Major/Minor)**: Menu trực quan cho phép chọn nhanh 24 cung giọng (Trưởng / Thứ) bất kỳ và truyền lập tức vào Auto-Tune chỉ với 1 cú click.
 - **⚡ 1-Click Đồng Bộ Tone Vào Auto-Tune**: Tự động dò tìm và gán chuẩn xác nốt Root & Scale vừa phát hiện vào plugin Auto-Tune / Pitch Correction trong Rack, giúp Streamer không cần am hiểu nhạc lý vẫn hát đúng tone 100%.
+
 - **🎶 Trình Phát Beat Chuẩn DAW Với Vector Icon Chuyên Nghiệp**:
   - Hỗ trợ các định dạng MP3, WAV, FLAC, OGG, AIFF.
   - Bộ nút điều khiển Vector Icon sắc nét: **`▶` Play / `❚❚` Pause**, **`■` Stop**, **`⟳` Loop**, thanh trượt Seek bar, thanh Volume và đồng hồ đếm thời gian.
