@@ -103,8 +103,50 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
     };
     contentContainer->addAndMakeVisible(factoryResetButton);
 
-    // --- 1. Noise Gate ---
-    setupModuleHeader(gatePwrButton, gateTitleLabel, juce::String::fromUTF8(u8"1. NOISE GATE (CHỐNG ỒN)"));
+    // --- 1. AI Noise & Room De-Reverb Shield ---
+    setupModuleHeader(aiPwrButton, aiTitleLabel, juce::String::fromUTF8(u8"1. 🛡️ AI NOISE & DE-REVERB"));
+    aiPwrButton.onClick = [this] {
+        if (dspProcessor != nullptr) {
+            dspProcessor->setAiDenoiseEnabled(!dspProcessor->isAiDenoiseEnabled());
+            updateAllUI();
+        }
+    };
+
+    aiDenoiseToggle.setTooltip(juce::String::fromUTF8(u8"Khử sạch tiếng quạt gió, ve sầu, còi xe, tiếng gõ phím bằng mạng nơ-ron AI ngay cả khi đang hát"));
+    aiDenoiseToggle.onClick = [this] {
+        if (dspProcessor != nullptr) {
+            dspProcessor->setAiDenoiseEnabled(!dspProcessor->isAiDenoiseEnabled());
+            updateAllUI();
+        }
+    };
+    contentContainer->addAndMakeVisible(aiDenoiseToggle);
+
+    aiDeReverbToggle.setTooltip(juce::String::fromUTF8(u8"Triệt tiêu tiếng dội âm và tiếng vang phòng chưa dán mút tiêu âm giúp giọng hát khô và nét"));
+    aiDeReverbToggle.onClick = [this] {
+        if (dspProcessor != nullptr) {
+            dspProcessor->setAiDeReverbEnabled(!dspProcessor->isAiDeReverbEnabled());
+            updateAllUI();
+        }
+    };
+    contentContainer->addAndMakeVisible(aiDeReverbToggle);
+
+    setupSlider(aiDenoiseSlider, aiDenoiseLabel, "AI Denoise", 0.0, 100.0, 1.0, 75.0, "%");
+    aiDenoiseSlider.onValueChange = [this] {
+        if (dspProcessor != nullptr) dspProcessor->setAiDenoiseAmount(static_cast<float>(aiDenoiseSlider.getValue() * 0.01));
+    };
+
+    setupSlider(aiDeReverbSlider, aiDeReverbLabel, "De-Reverb", 0.0, 100.0, 1.0, 40.0, "%");
+    aiDeReverbSlider.onValueChange = [this] {
+        if (dspProcessor != nullptr) dspProcessor->setAiDeReverbAmount(static_cast<float>(aiDeReverbSlider.getValue() * 0.01));
+    };
+
+    aiStatusLabel.setFont(juce::FontOptions(9.5f, juce::Font::bold));
+    aiStatusLabel.setColour(juce::Label::textColourId, juce::Colour(0xff34d399)); // Emerald
+    aiStatusLabel.setJustificationType(juce::Justification::centredLeft);
+    contentContainer->addAndMakeVisible(aiStatusLabel);
+
+    // --- 2. Noise Gate ---
+    setupModuleHeader(gatePwrButton, gateTitleLabel, juce::String::fromUTF8(u8"2. NOISE GATE (CHỐNG ỒN)"));
     gatePwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
             dspProcessor->setGateEnabled(!dspProcessor->isGateEnabled());
@@ -116,8 +158,8 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         if (dspProcessor != nullptr) dspProcessor->setGateThresholdDb(static_cast<float>(gateThreshSlider.getValue()));
     };
 
-    // --- 2. Studio EQ ---
-    setupModuleHeader(eqPwrButton, eqTitleLabel, juce::String::fromUTF8(u8"2. STUDIO EQ 3-BAND"));
+    // --- 3. Studio EQ ---
+    setupModuleHeader(eqPwrButton, eqTitleLabel, juce::String::fromUTF8(u8"3. STUDIO EQ 3-BAND"));
     eqPwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
             dspProcessor->setEqEnabled(!dspProcessor->isEqEnabled());
@@ -137,8 +179,8 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         if (dspProcessor != nullptr) dspProcessor->setEqHighGainDb(static_cast<float>(eqHighSlider.getValue()));
     };
 
-    // --- 3. Warm Comp ---
-    setupModuleHeader(compPwrButton, compTitleLabel, juce::String::fromUTF8(u8"3. WARM COMPRESSOR"));
+    // --- 4. Warm Comp ---
+    setupModuleHeader(compPwrButton, compTitleLabel, juce::String::fromUTF8(u8"4. WARM COMPRESSOR"));
     compPwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
             dspProcessor->setCompEnabled(!dspProcessor->isCompEnabled());
@@ -340,13 +382,30 @@ void BuiltInDspComponent::updateAllUI()
     const double currentBpm = graphManager.getTempoSyncEngine().getBpm();
     bpmValueLabel.setText(juce::String(static_cast<int>(std::round(currentBpm))) + " BPM", juce::dontSendNotification);
 
-    // Gate
+    // 1. AI Shield
+    const bool aiEn = dspProcessor->isAiDenoiseEnabled();
+    aiPwrButton.setButtonText(aiEn ? "ON" : "OFF");
+    aiPwrButton.setColour(juce::TextButton::buttonColourId, aiEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
+
+    aiDenoiseToggle.setButtonText(aiEn ? juce::String::fromUTF8(u8"⚡ AI DENOISE") : juce::String::fromUTF8(u8"AI: TẮT"));
+    aiDenoiseToggle.setColour(juce::TextButton::buttonColourId, aiEn ? juce::Colour(0xff0284c7) : juce::Colour(0xff1e293b));
+    aiDenoiseToggle.setColour(juce::TextButton::textColourOffId, aiEn ? juce::Colours::white : juce::Colour(0xff94a3b8));
+
+    const bool deRevEn = dspProcessor->isAiDeReverbEnabled();
+    aiDeReverbToggle.setButtonText(deRevEn ? juce::String::fromUTF8(u8"🏠 DE-REVERB") : juce::String::fromUTF8(u8"DE-REV: TẮT"));
+    aiDeReverbToggle.setColour(juce::TextButton::buttonColourId, deRevEn ? juce::Colour(0xff4338ca) : juce::Colour(0xff1e293b));
+    aiDeReverbToggle.setColour(juce::TextButton::textColourOffId, deRevEn ? juce::Colours::white : juce::Colour(0xff94a3b8));
+
+    aiDenoiseSlider.setValue(dspProcessor->getAiDenoiseAmount() * 100.0, juce::dontSendNotification);
+    aiDeReverbSlider.setValue(dspProcessor->getAiDeReverbAmount() * 100.0, juce::dontSendNotification);
+
+    // 2. Gate
     const bool gEn = dspProcessor->isGateEnabled();
     gatePwrButton.setButtonText(gEn ? "ON" : "OFF");
     gatePwrButton.setColour(juce::TextButton::buttonColourId, gEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
     gateThreshSlider.setValue(dspProcessor->getGateThresholdDb(), juce::dontSendNotification);
 
-    // EQ
+    // 3. EQ
     const bool eqEn = dspProcessor->isEqEnabled();
     eqPwrButton.setButtonText(eqEn ? "ON" : "OFF");
     eqPwrButton.setColour(juce::TextButton::buttonColourId, eqEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
@@ -354,7 +413,7 @@ void BuiltInDspComponent::updateAllUI()
     eqMidSlider.setValue(dspProcessor->getEqMidGainDb(), juce::dontSendNotification);
     eqHighSlider.setValue(dspProcessor->getEqHighGainDb(), juce::dontSendNotification);
 
-    // Comp
+    // 4. Comp
     const bool cEn = dspProcessor->isCompEnabled();
     compPwrButton.setButtonText(cEn ? "ON" : "OFF");
     compPwrButton.setColour(juce::TextButton::buttonColourId, cEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
@@ -362,7 +421,7 @@ void BuiltInDspComponent::updateAllUI()
     compRatioSlider.setValue(dspProcessor->getCompRatio(), juce::dontSendNotification);
     compMakeupSlider.setValue(dspProcessor->getCompMakeupDb(), juce::dontSendNotification);
 
-    // Reverb
+    // 5. Reverb
     const bool rEn = dspProcessor->isReverbEnabled();
     reverbPwrButton.setButtonText(rEn ? "ON" : "OFF");
     reverbPwrButton.setColour(juce::TextButton::buttonColourId, rEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
@@ -392,7 +451,7 @@ void BuiltInDspComponent::updateAllUI()
     }
     reverbWetSlider.setValue(dspProcessor->getReverbWetMix() * 100.0, juce::dontSendNotification);
 
-    // Delay
+    // 6. Delay
     const bool dEn = dspProcessor->isDelayEnabled();
     delayPwrButton.setButtonText(dEn ? "ON" : "OFF");
     delayPwrButton.setColour(juce::TextButton::buttonColourId, dEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
@@ -421,7 +480,7 @@ void BuiltInDspComponent::updateAllUI()
     delayFeedbackSlider.setValue(dspProcessor->getDelayFeedback() * 100.0, juce::dontSendNotification);
     delayWetSlider.setValue(dspProcessor->getDelayWetMix() * 100.0, juce::dontSendNotification);
 
-    // Limiter
+    // 7. Limiter
     const bool lEn = dspProcessor->isLimiterEnabled();
     limiterPwrButton.setButtonText(lEn ? "ON" : "OFF");
     limiterPwrButton.setColour(juce::TextButton::buttonColourId, lEn ? juce::Colour(0xff059669) : juce::Colour(0xff334155));
@@ -436,6 +495,18 @@ void BuiltInDspComponent::timerCallback()
     {
         gateIsOpenCached = dspProcessor->isGateOpen();
         compGrCached = dspProcessor->getCompGainReductionDb();
+
+        if (dspProcessor->isAiDenoiseEnabled())
+        {
+            float cutDb = dspProcessor->getAiNoiseReductionDb();
+            int prob = static_cast<int>(dspProcessor->getAiVoiceProbability() * 100.0f);
+            aiStatusLabel.setText(juce::String::fromUTF8(u8"🛡️ Khử: ") + juce::String(cutDb, 1) + " dB | Giọng: " + juce::String(prob) + "%", juce::dontSendNotification);
+        }
+        else
+        {
+            aiStatusLabel.setText(juce::String::fromUTF8(u8"🛡️ AI: Tạm dừng (Bypass)"), juce::dontSendNotification);
+        }
+
         repaint();
     }
 }
@@ -455,7 +526,7 @@ void BuiltInDspComponent::resized()
     viewport.setBounds(getLocalBounds());
 
     const int contentW = std::max(180, getWidth() - 12);
-    const int totalContentH = 780;
+    const int totalContentH = 920;
     contentContainer->setBounds(0, 0, contentW, totalContentH);
 
     int y = 4;
@@ -485,14 +556,33 @@ void BuiltInDspComponent::resized()
         y += 6;
     };
 
-    // 1. Gate
+    // 1. AI Noise & Room De-Reverb Shield
+    layoutModule(aiPwrButton, aiTitleLabel, [&] {
+        const int btnW = (contentW - 16) / 2;
+        aiDenoiseToggle.setBounds(6, y, btnW, 20);
+        aiDeReverbToggle.setBounds(8 + btnW, y, btnW, 20);
+        y += 24;
+
+        aiDenoiseLabel.setBounds(8, y, 70, 14);
+        aiDenoiseSlider.setBounds(6, y + 14, contentW - 12, 18);
+        y += 34;
+
+        aiDeReverbLabel.setBounds(8, y, 70, 14);
+        aiDeReverbSlider.setBounds(6, y + 14, contentW - 12, 18);
+        y += 34;
+
+        aiStatusLabel.setBounds(8, y, contentW - 16, 16);
+        y += 18;
+    });
+
+    // 2. Gate
     layoutModule(gatePwrButton, gateTitleLabel, [&] {
         gateThreshLabel.setBounds(8, y, 70, 16);
         gateThreshSlider.setBounds(6, y + 16, contentW - 12, 20);
         y += 38;
     });
 
-    // 2. EQ
+    // 3. EQ
     layoutModule(eqPwrButton, eqTitleLabel, [&] {
         eqLowLabel.setBounds(8, y, 90, 14);
         eqLowSlider.setBounds(6, y + 14, contentW - 12, 18);
@@ -507,7 +597,7 @@ void BuiltInDspComponent::resized()
         y += 34;
     });
 
-    // 3. Comp
+    // 4. Comp
     layoutModule(compPwrButton, compTitleLabel, [&] {
         compThreshLabel.setBounds(8, y, 70, 14);
         compThreshSlider.setBounds(6, y + 14, contentW - 12, 18);
@@ -522,7 +612,7 @@ void BuiltInDspComponent::resized()
         y += 34;
     });
 
-    // 4. Reverb & Smart Auto-Tail
+    // 5. Reverb & Smart Auto-Tail
     layoutModule(reverbPwrButton, reverbTitleLabel, [&] {
         reverbSyncToggle.setBounds(6, y, contentW - 12, 20);
         y += 24;
@@ -551,7 +641,7 @@ void BuiltInDspComponent::resized()
         y += 34;
     });
 
-    // 5. Delay & Smart BPM Sync
+    // 6. Delay & Smart BPM Sync
     layoutModule(delayPwrButton, delayTitleLabel, [&] {
         delaySyncToggle.setBounds(6, y, contentW - 12, 20);
         y += 24;
@@ -580,7 +670,7 @@ void BuiltInDspComponent::resized()
         y += 34;
     });
 
-    // 6. Limiter
+    // 7. Limiter
     layoutModule(limiterPwrButton, limiterTitleLabel, [&] {
         limiterThreshLabel.setBounds(8, y, 70, 14);
         limiterThreshSlider.setBounds(6, y + 14, contentW - 12, 18);

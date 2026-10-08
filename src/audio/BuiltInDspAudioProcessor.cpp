@@ -13,6 +13,9 @@ void BuiltInDspAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
 {
     currentSampleRate = (sampleRate > 8000.0) ? sampleRate : 44100.0;
 
+    // AI Noise Suppressor & Room De-Reverb Prepare
+    aiNoiseSuppressor.prepare(currentSampleRate, samplesPerBlock);
+
     // Pre-allocate temp reverb buffer to eliminate heap allocation on audio thread
     tempReverbBuffer.setSize(2, std::max(samplesPerBlock, 2048));
 
@@ -122,6 +125,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     if (numSamples <= 0 || numChannels <= 0)
         return;
 
+    const bool hasAi = aiNoiseSuppressor.isEnabled();
     const bool hasGate = gateEnabled.load(std::memory_order_relaxed);
     const bool hasEq = eqEnabled.load(std::memory_order_relaxed);
     const bool hasComp = compEnabled.load(std::memory_order_relaxed);
@@ -130,8 +134,16 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     const bool hasLimiter = limiterEnabled.load(std::memory_order_relaxed);
 
     // If completely bypassed, return immediately with 0 overhead
-    if (!hasGate && !hasEq && !hasComp && !hasDelay && !hasReverb && !hasLimiter)
+    if (!hasAi && !hasGate && !hasEq && !hasComp && !hasDelay && !hasReverb && !hasLimiter)
         return;
+
+    // -------------------------------------------------------------
+    // 0. AI REAL-TIME NOISE SUPPRESSOR & ROOM DE-REVERB SHIELD
+    // -------------------------------------------------------------
+    if (hasAi)
+    {
+        aiNoiseSuppressor.process(buffer);
+    }
 
     // Check EQ coefficient updates
     if (hasEq && needEqUpdate.load(std::memory_order_relaxed))
@@ -412,6 +424,10 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
     switch (preset)
     {
     case VocalPreset::LiveSinging:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.75f);
+        setAiDeReverbEnabled(true);
+        setAiDeReverbAmount(0.40f);
         setGateEnabled(true);
         setGateThresholdDb(-48.0f);
         setEqEnabled(true);
@@ -436,6 +452,10 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         break;
 
     case VocalPreset::StreamerTalk:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.85f);
+        setAiDeReverbEnabled(true);
+        setAiDeReverbAmount(0.50f);
         setGateEnabled(true);
         setGateThresholdDb(-44.0f);
         setEqEnabled(true);
@@ -457,6 +477,10 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         break;
 
     case VocalPreset::KaraokeHall:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.70f);
+        setAiDeReverbEnabled(true);
+        setAiDeReverbAmount(0.30f);
         setGateEnabled(true);
         setGateThresholdDb(-50.0f);
         setEqEnabled(true);
@@ -481,6 +505,10 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         break;
 
     case VocalPreset::PodcastClean:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.90f);
+        setAiDeReverbEnabled(true);
+        setAiDeReverbAmount(0.60f);
         setGateEnabled(true);
         setGateThresholdDb(-46.0f);
         setEqEnabled(true);
@@ -498,6 +526,8 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         break;
 
     case VocalPreset::BypassAll:
+        setAiDenoiseEnabled(false);
+        setAiDeReverbEnabled(false);
         setGateEnabled(false);
         setEqEnabled(false);
         setCompEnabled(false);
@@ -522,6 +552,10 @@ void BuiltInDspAudioProcessor::resetToFactoryDefaults()
 void BuiltInDspAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::XmlElement xml("BuiltInDspState");
+    xml.setAttribute("aiDenoiseEnabled", isAiDenoiseEnabled());
+    xml.setAttribute("aiDenoiseAmount", getAiDenoiseAmount());
+    xml.setAttribute("aiDeReverbEnabled", isAiDeReverbEnabled());
+    xml.setAttribute("aiDeReverbAmount", getAiDeReverbAmount());
     xml.setAttribute("gateEnabled", isGateEnabled());
     xml.setAttribute("gateThresh", getGateThresholdDb());
     xml.setAttribute("eqEnabled", isEqEnabled());
@@ -556,6 +590,10 @@ void BuiltInDspAudioProcessor::setStateInformation(const void* data, int sizeInB
     auto xml = getXmlFromBinary(data, sizeInBytes);
     if (xml != nullptr && xml->hasTagName("BuiltInDspState"))
     {
+        setAiDenoiseEnabled(xml->getBoolAttribute("aiDenoiseEnabled", true));
+        setAiDenoiseAmount(static_cast<float>(xml->getDoubleAttribute("aiDenoiseAmount", 0.75)));
+        setAiDeReverbEnabled(xml->getBoolAttribute("aiDeReverbEnabled", true));
+        setAiDeReverbAmount(static_cast<float>(xml->getDoubleAttribute("aiDeReverbAmount", 0.40)));
         setGateEnabled(xml->getBoolAttribute("gateEnabled", true));
         setGateThresholdDb(static_cast<float>(xml->getDoubleAttribute("gateThresh", -48.0)));
         setEqEnabled(xml->getBoolAttribute("eqEnabled", true));

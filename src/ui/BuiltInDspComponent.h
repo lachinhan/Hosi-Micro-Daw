@@ -38,14 +38,25 @@ private:
     juce::TextButton bpmUpBtn{ "+" };
     juce::TextButton tapTempoBtn{ "TAP" };
 
-    // --- 1. Noise Gate Module ---
+    // --- 1. AI Noise & Room De-Reverb Shield ---
+    juce::TextButton aiPwrButton{ "PWR" };
+    juce::Label aiTitleLabel;
+    juce::TextButton aiDenoiseToggle{ "⚡ AI DENOISE" };
+    juce::TextButton aiDeReverbToggle{ "🏠 DE-REVERB" };
+    juce::Slider aiDenoiseSlider;
+    juce::Label aiDenoiseLabel;
+    juce::Slider aiDeReverbSlider;
+    juce::Label aiDeReverbLabel;
+    juce::Label aiStatusLabel;
+
+    // --- 2. Noise Gate Module ---
     juce::TextButton gatePwrButton{ "PWR" };
     juce::Label gateTitleLabel;
     juce::Slider gateThreshSlider;
     juce::Label gateThreshLabel;
     bool gateIsOpenCached{ false };
 
-    // --- 2. Studio EQ Module ---
+    // --- 3. Studio EQ Module ---
     juce::TextButton eqPwrButton{ "PWR" };
     juce::Label eqTitleLabel;
     juce::Slider eqLowSlider, eqMidSlider, eqHighSlider;

@@ -123,6 +123,23 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
     addAndMakeVisible(duckingButton);
     updateDuckingButtonUI();
 
+    // --- Quick 1-Touch AI Denoise & Room De-Reverb Shield Button ---
+    aiShieldButton.setTooltip(juce::String::fromUTF8(u8"Khử ồn & triệt tiêu dội âm phòng AI thời gian thực (DeepFilter AI Shield)\n• Click trái: Bật / Tắt AI Shield\n• Click phải: Chọn cường độ khử ồn (Nhẹ 40%, Studio 75%, Mạnh 90%) hoặc bật/tắt De-Reverb..."));
+    aiShieldButton.onToggle = [this] {
+        auto* dsp = graphManager.getBuiltInDsp();
+        if (dsp != nullptr)
+        {
+            bool nextState = !dsp->isAiDenoiseEnabled();
+            dsp->setAiDenoiseEnabled(nextState);
+            updateAiShieldButtonUI();
+        }
+    };
+    aiShieldButton.onRightClick = [this] {
+        showAiShieldSettingsMenu();
+    };
+    addAndMakeVisible(aiShieldButton);
+    updateAiShieldButtonUI();
+
     // --- Quick 1-Touch 24-bit Audio Recorder ---
     recButton.setButtonText(juce::String::fromUTF8(u8"● REC"));
     recButton.setTooltip(juce::String::fromUTF8(u8"Thu âm 1 chạm chuẩn WAV 24-bit (Thu đồng thời Master Mix và Mic mộc Dry)"));
@@ -755,6 +772,7 @@ void KeyDetectorComponent::timerCallback()
     updateTransportUI();
     updateKeyUI();
     scanAutoKeyPluginsInRack();
+    updateAiShieldButtonUI();
     updateRecordButtonUI();
     repaint();
 }
@@ -764,6 +782,7 @@ void KeyDetectorComponent::changeListenerCallback(juce::ChangeBroadcaster* /*sou
     updateTransportUI();
     updateKeyUI();
     updateDuckingButtonUI();
+    updateAiShieldButtonUI();
 }
 
 void KeyDetectorComponent::paint(juce::Graphics& g)
@@ -896,6 +915,90 @@ void KeyDetectorComponent::showDuckingSettingsMenu()
         });
 }
 
+void KeyDetectorComponent::updateAiShieldButtonUI()
+{
+    auto* dsp = graphManager.getBuiltInDsp();
+    if (dsp == nullptr) return;
+
+    const bool isAiOn = dsp->isAiDenoiseEnabled() || dsp->isAiDeReverbEnabled();
+    const float redDb = dsp->getAiNoiseReductionDb();
+
+    if (isAiOn)
+    {
+        if (redDb > 1.0f)
+        {
+            aiShieldButton.setButtonText(juce::String::fromUTF8(u8"🛡️ -") + juce::String(static_cast<int>(std::round(redDb))) + "dB");
+        }
+        else
+        {
+            aiShieldButton.setButtonText(juce::String::fromUTF8(u8"🛡️ AI ON"));
+        }
+        aiShieldButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0284c7)); // Sky Blue / Cyan
+        aiShieldButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    }
+    else
+    {
+        aiShieldButton.setButtonText(juce::String::fromUTF8(u8"🛡️ AI: OFF"));
+        aiShieldButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+        aiShieldButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff94a3b8));
+    }
+}
+
+void KeyDetectorComponent::showAiShieldSettingsMenu()
+{
+    auto* dsp = graphManager.getBuiltInDsp();
+    if (dsp == nullptr) return;
+
+    juce::PopupMenu menu;
+    const bool isDenoiseOn = dsp->isAiDenoiseEnabled();
+    const bool isDeRevOn = dsp->isAiDeReverbEnabled();
+    const float denoiseAmt = dsp->getAiDenoiseAmount();
+    const float deRevAmt = dsp->getAiDeReverbAmount();
+
+    menu.addSectionHeader(juce::String::fromUTF8(u8"🛡️ AI NOISE & DE-REVERB SHIELD (DEEPFILTER AI)"));
+    menu.addItem(100, juce::String::fromUTF8(u8"⚡ BẬT / TẮT KHỬ ỒN AI (AI DENOISE)"), true, isDenoiseOn);
+    menu.addItem(101, juce::String::fromUTF8(u8"🏛️ BẬT / TẮT TRIỆT TIÊU DỘI PHÒNG (AI DE-REVERB)"), true, isDeRevOn);
+    menu.addSeparator();
+
+    // 1. Mức Khử Ồn AI (Denoise Intensity)
+    juce::PopupMenu denoiseMenu;
+    denoiseMenu.addItem(1, juce::String::fromUTF8(u8"Nhẹ nhàng (40% - Phòng ít ồn, quạt xa)"), true, std::abs(denoiseAmt - 0.40f) < 0.08f);
+    denoiseMenu.addItem(2, juce::String::fromUTF8(u8"Studio Tiêu Chuẩn (75% ⭐ - Khử quạt, ve kêu, giữ mượt giọng)"), true, std::abs(denoiseAmt - 0.75f) < 0.08f);
+    denoiseMenu.addItem(3, juce::String::fromUTF8(u8"Triệt Để / Mạnh (90% - Phòng ồn nhiều, gần đường phố)"), true, std::abs(denoiseAmt - 0.90f) < 0.08f);
+    denoiseMenu.addItem(4, juce::String::fromUTF8(u8"Tối đa (100% - Khử còi xe, bàn phím gõ mạnh)"), true, std::abs(denoiseAmt - 1.0f) < 0.05f);
+    menu.addSubMenu(juce::String::fromUTF8(u8"🎚️ Cường độ khử ồn AI (Denoise Amount)"), denoiseMenu);
+
+    // 2. Mức Triệt Tiêu Dội Phòng (De-Reverb Intensity)
+    juce::PopupMenu deRevMenu;
+    deRevMenu.addItem(10, juce::String::fromUTF8(u8"Nhẹ (30% - Phòng ngủ thông thường)"), true, std::abs(deRevAmt - 0.30f) < 0.08f);
+    deRevMenu.addItem(11, juce::String::fromUTF8(u8"Vừa phải (55% ⭐ - Phòng trống chưa dán mút tiêu âm)"), true, std::abs(deRevAmt - 0.55f) < 0.08f);
+    deRevMenu.addItem(12, juce::String::fromUTF8(u8"Mạnh (80% - Phòng khách / Hội trường dội nhiều)"), true, std::abs(deRevAmt - 0.80f) < 0.08f);
+    menu.addSubMenu(juce::String::fromUTF8(u8"🏛️ Mức triệt tiêu dội phòng (Room De-Reverb)"), deRevMenu);
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&aiShieldButton),
+        [this, dsp](int result) {
+            if (result == 0) return;
+
+            if (result == 100)
+            {
+                dsp->setAiDenoiseEnabled(!dsp->isAiDenoiseEnabled());
+            }
+            else if (result == 101)
+            {
+                dsp->setAiDeReverbEnabled(!dsp->isAiDeReverbEnabled());
+            }
+            else if (result == 1) { dsp->setAiDenoiseAmount(0.40f); dsp->setAiDenoiseEnabled(true); }
+            else if (result == 2) { dsp->setAiDenoiseAmount(0.75f); dsp->setAiDenoiseEnabled(true); }
+            else if (result == 3) { dsp->setAiDenoiseAmount(0.90f); dsp->setAiDenoiseEnabled(true); }
+            else if (result == 4) { dsp->setAiDenoiseAmount(1.00f); dsp->setAiDenoiseEnabled(true); }
+            else if (result == 10) { dsp->setAiDeReverbAmount(0.30f); dsp->setAiDeReverbEnabled(true); }
+            else if (result == 11) { dsp->setAiDeReverbAmount(0.55f); dsp->setAiDeReverbEnabled(true); }
+            else if (result == 12) { dsp->setAiDeReverbAmount(0.80f); dsp->setAiDeReverbEnabled(true); }
+
+            updateAiShieldButtonUI();
+        });
+}
+
 void KeyDetectorComponent::resized()
 {
     auto area = getLocalBounds().reduced(8, 4);
@@ -942,12 +1045,16 @@ void KeyDetectorComponent::resized()
     volumeSlider.setBounds(topRow.removeFromLeft(56).reduced(0, 4));
 
     // Top Row Smart Ducking Button
-    topRow.removeFromLeft(6);
-    duckingButton.setBounds(topRow.removeFromLeft(96).reduced(0, 2));
+    topRow.removeFromLeft(5);
+    duckingButton.setBounds(topRow.removeFromLeft(86).reduced(0, 2));
+
+    // Top Row AI Shield Button
+    topRow.removeFromLeft(4);
+    aiShieldButton.setBounds(topRow.removeFromLeft(88).reduced(0, 2));
 
     // Top Row Quick Record & Folder Buttons
-    topRow.removeFromLeft(6);
-    recButton.setBounds(topRow.removeFromLeft(66).reduced(0, 2));
+    topRow.removeFromLeft(4);
+    recButton.setBounds(topRow.removeFromLeft(64).reduced(0, 2));
     topRow.removeFromLeft(3);
     recFolderButton.setBounds(topRow.removeFromLeft(28).reduced(0, 2));
 

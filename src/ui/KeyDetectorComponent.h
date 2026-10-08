@@ -159,7 +159,31 @@ private:
         }
     };
 
+    class AiShieldButton : public juce::TextButton
+    {
+    public:
+        AiShieldButton() : juce::TextButton(juce::String::fromUTF8(u8"🛡️ AI: OFF")) {}
+
+        std::function<void()> onToggle;
+        std::function<void()> onRightClick;
+
+        void clicked(const juce::ModifierKeys& modifiers) override
+        {
+            if (modifiers.isPopupMenu() || modifiers.isRightButtonDown())
+            {
+                if (onRightClick)
+                    onRightClick();
+            }
+            else
+            {
+                if (onToggle)
+                    onToggle();
+            }
+        }
+    };
+
     DuckingButton duckingButton;
+    AiShieldButton aiShieldButton;
     juce::TextButton recButton{ "REC" };
     juce::TextButton recFolderButton{ "DIR" };
 
@@ -193,6 +217,8 @@ private:
     void updateAutoPushUI();
     void updateDuckingButtonUI();
     void showDuckingSettingsMenu();
+    void updateAiShieldButtonUI();
+    void showAiShieldSettingsMenu();
     void updateRecordButtonUI();
 
     juce::String lastAutoKeyPluginKey;

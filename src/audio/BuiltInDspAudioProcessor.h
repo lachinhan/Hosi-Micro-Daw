@@ -5,6 +5,7 @@
 #include <atomic>
 #include <vector>
 #include "TempoSyncEngine.h"
+#include "AiNoiseSuppressor.h"
 
 class BuiltInDspAudioProcessor : public juce::AudioProcessor, public juce::ChangeBroadcaster
 {
@@ -36,7 +37,21 @@ public:
     }
     double getHostBpm() const noexcept { return hostBpm.load(std::memory_order_relaxed); }
 
-    // --- Noise Gate Controls ---
+    // --- 1. AI Noise & Room De-Reverb Shield ---
+    void setAiDenoiseEnabled(bool enabled) noexcept { aiNoiseSuppressor.setEnabled(enabled); }
+    bool isAiDenoiseEnabled() const noexcept { return aiNoiseSuppressor.isEnabled(); }
+    void setAiDenoiseAmount(float amount) noexcept { aiNoiseSuppressor.setDenoiseAmount(amount); }
+    float getAiDenoiseAmount() const noexcept { return aiNoiseSuppressor.getDenoiseAmount(); }
+
+    void setAiDeReverbEnabled(bool enabled) noexcept { aiNoiseSuppressor.setDeReverbEnabled(enabled); }
+    bool isAiDeReverbEnabled() const noexcept { return aiNoiseSuppressor.isDeReverbEnabled(); }
+    void setAiDeReverbAmount(float amount) noexcept { aiNoiseSuppressor.setDeReverbAmount(amount); }
+    float getAiDeReverbAmount() const noexcept { return aiNoiseSuppressor.getDeReverbAmount(); }
+
+    float getAiNoiseReductionDb() const noexcept { return aiNoiseSuppressor.getNoiseReductionDb(); }
+    float getAiVoiceProbability() const noexcept { return aiNoiseSuppressor.getVoiceProbability(); }
+
+    // --- 2. Noise Gate Controls ---
     void setGateEnabled(bool enabled) noexcept
     {
         gateEnabled.store(enabled, std::memory_order_release);
@@ -214,6 +229,9 @@ private:
     float limiterPeakEnv{ 0.0f };
 
     std::atomic<VocalPreset> currentPreset{ VocalPreset::BypassAll };
+
+    // --- AI Noise Suppressor & Room De-Reverb ---
+    AiNoiseSuppressor aiNoiseSuppressor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BuiltInDspAudioProcessor)
 };

@@ -61,9 +61,13 @@
 
 ---
 
-### 3. 🛡️ Tính Năng 3: AI Real-Time Denoise & Room De-reverb (DeepFilter AI)
-* **Giải pháp kỹ thuật siêu nhẹ (C++ RNNoise / GRU)**: Trọng số AI được biên dịch trực tiếp vào mã nguồn C++, dung lượng tăng thêm chỉ **~0.8 MB**, chiếm CPU < 1.5%.
+### 3. 🛡️ Tính Năng 3: AI Real-Time Denoise & Room De-reverb (DeepFilter AI Shield) - [x] **ĐÃ HOÀN THÀNH & TÍCH HỢP 100% VÀO BẢN PRO v3.x**
+* **Giải pháp kỹ thuật siêu nhẹ (C++ RNNoise / DeepFilter GRU)**: Trọng số AI được biên dịch trực tiếp vào mã nguồn C++, dung lượng tăng thêm chỉ **~0.8 MB**, chiếm CPU < 1.5%.
 * **Hiệu quả**: Khử triệt để tiếng quạt gió, tiếng ve kêu, tiếng còi xe ngoài đường, tiếng bàn phím cơ và tiếng dội âm của phòng chưa dán mút tiêu âm mà **hoàn toàn không làm méo tiếng giọng hát**.
+* **Trải nghiệm sử dụng**:
+  - **Module 1 trong Built-In DSP Rack**: Nút Power 🛡️, Thanh trượt `KHỬ ỒN AI (DENOISE)` 0-100%, Thanh trượt `TRIỆT TIÊU DỘI PHÒNG (DE-REVERB)` 0-100%, và đồng hồ đo `dB Khử` & `% Giọng Hát` thời gian thực.
+  - **Phím tắt nhanh 1 chạm trên Top Bar**: Nút `[ 🛡️ AI SHIELD ]` hiển thị mức dB khử ồn trực tiếp, click trái bật/tắt nhanh, click phải mở menu cường độ (Nhẹ 40%, Studio Tiêu Chuẩn 75%, Mạnh 90%, Tối đa 100%).
+  - **Song hành độc lập với Classic Noise Gate**: Không can thiệp hoặc xoá Noise Gate truyền thống; người dùng có thể kết hợp cả 2 để đạt độ tĩnh tuyệt đối.
 
 ---
 
