@@ -13,6 +13,7 @@ CMakeLists.txt
 KE_HOACH_*.md
 build_*.bat
 Push_To_GitHub.bat
+*.html
 
 # Build directories and outputs
 build/
