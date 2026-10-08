@@ -531,3 +531,149 @@ bool PresetManager::loadPresetFromFile(const juce::File& file)
     }
     return false;
 }
+
+void PresetManager::fetchArtistPresetsCloudAsync(std::function<void(bool success, const std::vector<ArtistPresetItem>& presets, const juce::String& msg)> callback)
+{
+    if (isFetchingPresets.exchange(true))
+    {
+        if (callback)
+            callback(false, cachedArtistPresets, juce::String::fromUTF8(u8"Đang tải cấu hình preset từ Cloud..."));
+        return;
+    }
+
+    juce::Thread::launch([this, callback]() {
+        juce::String jsonText;
+
+        const std::vector<juce::String> cloudUrls = {
+            "https://raw.githubusercontent.com/lachinhan/Hosi-Micro-Daw/main/cloud/artist_presets.json",
+            "https://raw.githubusercontent.com/lachinhan/Hosi-Micro-Daw-Private/main/cloud/artist_presets.json",
+            "https://api.lachinhan.xyz/microdaw/v3/artist_presets.json"
+        };
+
+        for (const auto& urlStr : cloudUrls)
+        {
+            try
+            {
+                juce::URL url(urlStr);
+                auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+                                    .withConnectionTimeoutMs(4000);
+                std::unique_ptr<juce::InputStream> stream(url.createInputStream(options));
+                if (stream != nullptr)
+                {
+                    jsonText = stream->readEntireStreamAsString();
+                    if (jsonText.isNotEmpty() && jsonText.trim().startsWith("["))
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (...) {}
+        }
+
+        // Check local development fallback if network not reached
+        if (jsonText.isEmpty())
+        {
+            auto localCloud = juce::File::getCurrentWorkingDirectory().getChildFile("cloud").getChildFile("artist_presets.json");
+            if (localCloud.existsAsFile())
+                jsonText = localCloud.loadFileAsString();
+        }
+
+        if (jsonText.isNotEmpty())
+        {
+            auto parsed = juce::JSON::parse(jsonText);
+            if (parsed.isArray())
+            {
+                auto* arr = parsed.getArray();
+                std::vector<ArtistPresetItem> loadedPresets;
+                for (const auto& itemVar : *arr)
+                {
+                    if (itemVar.isObject())
+                        loadedPresets.push_back(ArtistPresetItem::fromVar(itemVar));
+                }
+
+                juce::MessageManager::callAsync([this, loadedPresets, callback]() {
+                    cachedArtistPresets = loadedPresets;
+                    isFetchingPresets.store(false);
+
+                    juce::String msg = juce::String::fromUTF8(u8"✓ Đã tải thành công ") + 
+                                       juce::String(loadedPresets.size()) + 
+                                       juce::String::fromUTF8(u8" Artist Preset từ Cloud.");
+
+                    if (callback)
+                        callback(true, cachedArtistPresets, msg);
+                });
+                return;
+            }
+        }
+
+        juce::MessageManager::callAsync([this, callback]() {
+            isFetchingPresets.store(false);
+            if (callback)
+                callback(false, cachedArtistPresets, juce::String::fromUTF8(u8"Không thể kết nối đến máy chủ Cloud."));
+        });
+    });
+}
+
+bool PresetManager::applyArtistPreset(const ArtistPresetItem& preset)
+{
+    auto* dsp = graphManager.getBuiltInDsp();
+    if (dsp == nullptr)
+        return false;
+
+    const auto& d = preset.dspSettings;
+    if (!d.isObject())
+        return false;
+
+    // AI Shield
+    if (d.hasProperty("aiDenoise")) dsp->setAiDenoiseEnabled(static_cast<bool>(d["aiDenoise"]));
+    if (d.hasProperty("aiDenoiseAmount")) dsp->setAiDenoiseAmount(static_cast<float>(d["aiDenoiseAmount"]));
+    if (d.hasProperty("aiDeReverb")) dsp->setAiDeReverbEnabled(static_cast<bool>(d["aiDeReverb"]));
+    if (d.hasProperty("aiDeReverbAmount")) dsp->setAiDeReverbAmount(static_cast<float>(d["aiDeReverbAmount"]));
+
+    // Gate
+    if (d.hasProperty("gateEnabled")) dsp->setGateEnabled(static_cast<bool>(d["gateEnabled"]));
+    if (d.hasProperty("gateThreshold")) dsp->setGateThresholdDb(static_cast<float>(d["gateThreshold"]));
+
+    // EQ
+    if (d.hasProperty("eqEnabled")) dsp->setEqEnabled(static_cast<bool>(d["eqEnabled"]));
+    if (d.hasProperty("eqLowGain")) dsp->setEqLowGainDb(static_cast<float>(d["eqLowGain"]));
+    if (d.hasProperty("eqMidGain")) dsp->setEqMidGainDb(static_cast<float>(d["eqMidGain"]));
+    if (d.hasProperty("eqHighGain")) dsp->setEqHighGainDb(static_cast<float>(d["eqHighGain"]));
+
+    // Compressor
+    if (d.hasProperty("compEnabled")) dsp->setCompEnabled(static_cast<bool>(d["compEnabled"]));
+    if (d.hasProperty("compThreshold")) dsp->setCompThresholdDb(static_cast<float>(d["compThreshold"]));
+    if (d.hasProperty("compRatio")) dsp->setCompRatio(static_cast<float>(d["compRatio"]));
+
+    // Reverb
+    if (d.hasProperty("reverbEnabled")) dsp->setReverbEnabled(static_cast<bool>(d["reverbEnabled"]));
+    if (d.hasProperty("reverbSync")) dsp->setReverbBpmSync(static_cast<bool>(d["reverbSync"]));
+    if (d.hasProperty("reverbRoomSize")) dsp->setReverbSize(static_cast<float>(d["reverbRoomSize"]));
+    if (d.hasProperty("reverbDamping")) dsp->setReverbDamp(static_cast<float>(d["reverbDamping"]));
+    if (d.hasProperty("reverbWet")) dsp->setReverbWetMix(static_cast<float>(d["reverbWet"]));
+
+    // Delay
+    if (d.hasProperty("delayEnabled")) dsp->setDelayEnabled(static_cast<bool>(d["delayEnabled"]));
+    if (d.hasProperty("delaySync")) dsp->setDelayBpmSync(static_cast<bool>(d["delaySync"]));
+    if (d.hasProperty("delayFeedback")) dsp->setDelayFeedback(static_cast<float>(d["delayFeedback"]));
+    if (d.hasProperty("delayWet")) dsp->setDelayWetMix(static_cast<float>(d["delayWet"]));
+    if (d.hasProperty("delaySubdiv"))
+    {
+        juce::String divStr = d["delaySubdiv"].toString();
+        if (divStr == "1/4") dsp->setDelaySubdivision(TempoSyncEngine::DelaySubdivision::Quarter);
+        else if (divStr == "1/8") dsp->setDelaySubdivision(TempoSyncEngine::DelaySubdivision::Eighth);
+        else if (divStr.contains("Dotted")) dsp->setDelaySubdivision(TempoSyncEngine::DelaySubdivision::DottedEighth);
+        else if (divStr.contains("Triplet")) dsp->setDelaySubdivision(TempoSyncEngine::DelaySubdivision::TripletEighth);
+    }
+
+    // Set Live Singing slots active
+    currentPreset = QuickPresetType::LiveSinging;
+    isTalkMode = false;
+    for (int i = 0; i < GraphManager::MAX_RACK_SLOTS; ++i)
+    {
+        graphManager.setSlotBypassed(i, false);
+    }
+
+    return true;
+}
+

@@ -24,8 +24,14 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
     presetComboBox.addItem(juce::String::fromUTF8(u8"🎙️ 2. Streamer / MC Talk"), 2);
     presetComboBox.addItem(juce::String::fromUTF8(u8"🎤 3. Karaoke Hall Echo"), 3);
     presetComboBox.addItem(juce::String::fromUTF8(u8"🎧 4. Podcast Clean Vocal"), 4);
-    presetComboBox.addItem(juce::String::fromUTF8(u8"⚡ 5. Tắt DSP (Bypass All)"), 5);
-    presetComboBox.addItem(juce::String::fromUTF8(u8"🔄 6. Khôi Phục Mặc Định (Reset)"), 6);
+    presetComboBox.addSeparator();
+    presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Chu Bin (Dance / Trap)"), 7);
+    presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Lệ Quyên (Bolero Trữ Tình)"), 8);
+    presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Đạt G / Vũ (Indie Acoustic)"), 9);
+    presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Vinahouse Party Live"), 10);
+    presetComboBox.addSeparator();
+    presetComboBox.addItem(juce::String::fromUTF8(u8"⚡ Tắt DSP (Bypass All)"), 5);
+    presetComboBox.addItem(juce::String::fromUTF8(u8"🔄 Khôi Phục Mặc Định (Reset)"), 6);
     presetComboBox.setSelectedId(1, juce::dontSendNotification);
     presetComboBox.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff1e293b));
     presetComboBox.setColour(juce::ComboBox::textColourId, juce::Colour(0xfff8fafc));

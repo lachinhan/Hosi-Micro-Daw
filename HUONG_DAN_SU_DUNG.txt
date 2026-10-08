@@ -29,6 +29,9 @@
      + Lên/Hạ Tone Auto-Tune khi nhạc chuyển tone: [MOD MIC: -1, 0, +1, +2].
      + Đổi Tone Beat YouTube theo thời gian thực: [BEAT: -3..+3].
      + Song ca Nam - Nữ 1-chạm: [♂ NAM] / [♀ NỮ].
+   - ☁️ Cloud Songbook & Artist Preset Cloud:
+     + Nút [☁️ Đồng Bộ Cloud] tự động nạp các bài hát Hot Trend TikTok/YouTube mới nhất.
+     + Thư viện Preset Ca Sĩ / Streamer mẫu (Chu Bin Dance/Trap, Lệ Quyên Bolero, Đạt G Acoustic, Streamer Radio, Vinahouse Party) 1-click nạp ngay.
 
 3. CÁC TÍNH NĂNG NỀN TẢNG STUDIO & LIVESTREAM:
    - ⚡ Tự động dò Tone beat nhạc & giọng hát bằng công nghệ Chroma/YIN DSP.

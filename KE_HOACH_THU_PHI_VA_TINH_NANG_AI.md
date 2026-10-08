@@ -115,10 +115,11 @@
 
 ---
 
-### 6. ☁️ Tính Năng 6: Cloud Songbook & Artist Preset Cloud
+### 6. ☁️ Tính Năng 6: Cloud Songbook & Artist Preset Cloud (✅ ĐÃ HOÀN THIỆN & TÍCH HỢP)
 * **Dung lượng thêm vào App**: **0 MB** (Sử dụng REST API HTTPS nạp dữ liệu on-demand).
-* Tự động đồng bộ các bài hát Hot Trend TikTok/YouTube vào Sổ Tone mỗi tuần qua Internet.
-* Cung cấp thư viện Preset của các ca sĩ/streamer nổi tiếng (Preset Chu Bin, Preset Lệ Quyên, Preset Bolero ấm áp, Preset Acoustic mộc mạc...) chỉ cần bấm nạp.
+* **Cloud Hot Trend Sync**: Tự động đồng bộ các bài hát Hot Trend TikTok/YouTube vào Sổ Tone mỗi tuần qua Internet, phân loại danh mục `[ ☁️ Hot Trend Cloud ]`.
+* **Thư Viện Artist Preset Cloud**: Cung cấp thư viện Preset của các ca sĩ/streamer nổi tiếng (Chu Bin Dance/Trap, Lệ Quyên Bolero, Đạt G Indie Acoustic, Streamer Radio Talkshow, Vinahouse Party) nạp tức thì trong 0.01s.
+* **Công cụ quản lý & Crawler tự động**: Tích hợp tool `tools/sync_cloud_data.py` tự động hóa cập nhật và chuẩn hóa dữ liệu Cloud.
 
 ---
 

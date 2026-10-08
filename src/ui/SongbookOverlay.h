@@ -54,6 +54,7 @@ private:
     juce::TextEditor searchEditor;
     juce::ComboBox genreFilterCombo;
     juce::TextButton aiRangeButton{ juce::String::fromUTF8(u8"🎙️ Đo Âm Vực AI") };
+    juce::TextButton syncCloudButton{ juce::String::fromUTF8(u8"☁️ Đồng Bộ Cloud") };
     juce::TextButton addSongButton{ juce::String::fromUTF8(u8"➕ Thêm Bài") };
     juce::TextButton importButton{ juce::String::fromUTF8(u8"📥 Nhập") };
     juce::TextButton exportButton{ juce::String::fromUTF8(u8"📤 Xuất") };

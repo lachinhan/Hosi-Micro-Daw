@@ -30,6 +30,7 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr, VocalRangeDetecto
     // Genre Filter
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🌟 Tất Cả Bài Hát"), 1);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🎯 Gợi Ý Vừa Giọng AI"), 100);
+    genreFilterCombo.addItem(juce::String::fromUTF8(u8"☁️ Hot Trend Cloud"), 8);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"❤️ Bài Hát Yêu Thích"), 2);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🔥 Nhạc Trẻ / Pop"), 3);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🎸 Bolero / Nhạc Vàng"), 4);
@@ -51,6 +52,23 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr, VocalRangeDetecto
             onOpenVocalRangeDetector();
     };
     addAndMakeVisible(aiRangeButton);
+
+    // Cloud Sync Button
+    syncCloudButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff4338ca)); // Indigo Cloud
+    syncCloudButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    syncCloudButton.onClick = [this]() {
+        syncCloudButton.setEnabled(false);
+        syncCloudButton.setButtonText(juce::String::fromUTF8(u8"⏳ Đang Đồng Bộ..."));
+        showToast(juce::String::fromUTF8(u8"Đang kết nối đến Cloud tải bài hát Hot Trend mới..."));
+
+        songbookManager.syncFromCloudAsync([this](bool success, int newSongsAdded, const juce::String& statusMsg) {
+            syncCloudButton.setEnabled(true);
+            syncCloudButton.setButtonText(juce::String::fromUTF8(u8"☁️ Đồng Bộ Cloud"));
+            refreshList();
+            showToast(statusMsg);
+        });
+    };
+    addAndMakeVisible(syncCloudButton);
 
     // Top action buttons
     addSongButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff059669));
@@ -308,6 +326,7 @@ void SongbookOverlay::refreshList()
     else if (filterId == 5) genreFilter = "TRINH";
     else if (filterId == 6) genreFilter = "TRU_TINH";
     else if (filterId == 7) genreFilter = "CUSTOM_USER";
+    else if (filterId == 8) genreFilter = "HOT_TREND";
 
     const auto& prof = vocalRangeDetector.getProfile();
     displayedSongs.clear();
@@ -724,17 +743,19 @@ void SongbookOverlay::resized()
 
     // Filter Bar
     auto filterBar = bounds.removeFromTop(38).reduced(12, 0);
-    searchEditor.setBounds(filterBar.removeFromLeft(280));
-    filterBar.removeFromLeft(8);
-    genreFilterCombo.setBounds(filterBar.removeFromLeft(165));
-    filterBar.removeFromLeft(8);
-    aiRangeButton.setBounds(filterBar.removeFromLeft(130));
-    filterBar.removeFromLeft(8);
-    addSongButton.setBounds(filterBar.removeFromLeft(95));
+    searchEditor.setBounds(filterBar.removeFromLeft(230));
     filterBar.removeFromLeft(6);
-    importButton.setBounds(filterBar.removeFromLeft(70));
+    genreFilterCombo.setBounds(filterBar.removeFromLeft(155));
     filterBar.removeFromLeft(6);
-    exportButton.setBounds(filterBar.removeFromLeft(70));
+    aiRangeButton.setBounds(filterBar.removeFromLeft(115));
+    filterBar.removeFromLeft(6);
+    syncCloudButton.setBounds(filterBar.removeFromLeft(125));
+    filterBar.removeFromLeft(6);
+    addSongButton.setBounds(filterBar.removeFromLeft(85));
+    filterBar.removeFromLeft(5);
+    importButton.setBounds(filterBar.removeFromLeft(60));
+    filterBar.removeFromLeft(5);
+    exportButton.setBounds(filterBar.removeFromLeft(60));
 
     bounds.removeFromTop(10);
 

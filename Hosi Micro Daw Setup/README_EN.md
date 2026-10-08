@@ -20,6 +20,38 @@ The application allows you to connect your microphone directly to professional V
 
 ## 🌟 Key Features
 
+### 🤖 NEXT-GEN AI VOCAL STUDIO FEATURES (PRO EDITION v3.x ⭐)
+
+1. **🎙️ AI Vocal Profiler & Smart Auto-EQ (1-Click AI Sounding)**:
+   - **Intelligent Spectral & Formant Profiling**: Speak or sing a short vocal snippet into your microphone. The AI analyzer captures your fundamental F0, detects room boom mud (200 - 450Hz), vocal sibilance (5k - 8.5kHz), and high-frequency air (9k - 18kHz).
+   - **1-Click Optimal EQ Compensation**: Generates 4 tailored professional mixing styles (*Studio Master, Sweet Bolero, Remix Pop, Podcast Streamer*), automatically configuring the 3-Band Studio EQ for crystal-clear, broadcast-ready vocals.
+
+2. **🎵 AI Vocal Range Detector & Smart Song Recommendation**:
+   - **Real-Time Vocal Range Tracking (`VocalRangeDetector`)**: High-precision pitch tracker measuring F0 frequencies from 65 Hz (`C2`) up to 1,050 Hz (`C6`).
+   - **15-Second Vocal Siren Scan**: Sing smoothly from your lowest note ("Oh...") to your highest note ("Ee..."). The interactive Piano Roll visualizer expands dynamically in real-time, categorizing your voice (*Baritone/Bass, Tenor, Alto/Mezzo, Soprano*).
+   - **Smart Database Matching (1,033+ Songs)**: Filter songs via `[ 🎯 Gợi Ý Vừa Giọng AI ]`, calculating vocal Fit Scores (100% Perfect Match, 95% Great Fit) with smart transpose recommendations: *"🎯 Lower -2 semitones to reach peak notes comfortably"*.
+   - **1-Click Sing Now**: Transposes and syncs target Key & Scale into Auto-Tune and triggers YouTube Beat playback simultaneously.
+
+3. **🛡️ AI Real-Time Denoise & Room De-reverb Shield (DeepFilter AI Shield)**:
+   - **Zero-Latency Neural Noise & Reverb Suppression**: 16-band zero-latency biquad filterbank eliminates fan noise, road traffic, cicadas, mechanical keyboard clicks, and untreated room reverberations **with zero vocal phase distortion**.
+   - **1-Touch Top Bar Quick Access `[ 🛡️ AI SHIELD ]`**: Left-click for instant toggle, right-click to select 4 preset intensities (40% Light, 75% Studio Standard, 90% Heavy, 100% Maximum).
+
+4. **⏱️ Smart BPM-Synced Reverb & Delay (Tempo-Locked Spatial FX)**:
+   - **Automatic Tempo Detection (BPM)**: Detects BPM automatically from Songbook database, YouTube Player, smart `[ TAP ]` tempo, or Spectral Flux Onset Beat Tracking.
+   - **Rhythmic Auto-Delay**: Calculates exact tempo-synced delay intervals: $\text{Delay (ms)} = \frac{60,000}{\text{BPM}} \times \text{Subdivision}$ (1/4 Pop, 1/8 Dotted Ballad, 1/8 Triplet Bounce...).
+   - **Auto-Reverb Tail**: Reverb decay closes rhythmically at the end of the musical bar (1/2 Bar, 1 Bar, 2 Bars, 4 Bars) via $\text{Decay (sec)} = \frac{240}{\text{BPM}} \times \text{Bars}$, keeping vocals spacious without muddying subsequent lyrics.
+   - **3rd-Party VST3 Host Sync**: Directly updates the host PlayHead (`MicroDawPlayHead`) for Valhalla, Soundtoys EchoBoy, FabFilter.
+
+5. **📺 Integrated YouTube Karaoke Player (Mini YouTube Karaoke Player)**:
+   - **Native YouTube Player**: Search and stream karaoke backing tracks directly inside the DAW with an ad-free clean interface (**`🛡️ CHẶN QC / LIVE`**).
+   - **1-Touch YouTube Key Detection (`🎯 DÒ TONE`)**: Matches video titles against the 1,033+ song database to feed accurate root keys and scales directly into Auto-Tune.
+   - **Auto-Tune Modulation on Key Changes (`MOD MIC: [-1] [0] [+1] [+2]`)**: Transpose Auto-Tune when songs modulate key at the bridge or chorus, **keeping YouTube backing audio 100% natural and unpitched**.
+   - **Instant Male / Female Duet Switching (`[♂ NAM]` / `[♀ NỮ]`)**: Seamlessly switch Auto-Tune target keys with 0ms latency during duets.
+
+---
+
+### 🎛️ CORE STUDIO & LIVESTREAM DAW ENGINE
+
 - **🎵 Auto Key & Scale Detection (Real-Time)**: Built-in Harmonic Chromagram analyzer combined with the Krumhansl-Schmuckler musical correlation engine to automatically detect the exact Root Note and Scale (e.g., C Major, F# Minor) of any loaded backing track or live microphone input stream.
 - **⚡ Auto-Push Tone on Lock (`⚡ AUTO` Mode)**:
   - **Auto-Push Mode (`⚡ AUTO`)**: When a backing track plays and locks tone with high confidence ($\ge 75\%$), the engine **automatically transmits the Key & Scale directly into Auto-Tune Pro in the rack** without needing any manual mouse clicks!
@@ -27,6 +59,7 @@ The application allows you to connect your microphone directly to professional V
 - **🤖 24/7 Online AI Assistant Guide**: Built-in specialized AI assistant at [byvn.net/hosiguide](https://byvn.net/hosiguide) ready to answer questions and provide step-by-step setup guides for VST3, OBS Studio, and vocal routing.
 - **🎛️ Manual Key Selector Menu (24 Major/Minor Keys)**: Intuitive popup menu to instantly select any of the 24 musical keys and feed it directly into Auto-Tune with a single click.
 - **⚡ 1-Click Auto-Tune Key Sync**: Automatically discovers and synchronizes the detected Key and Scale directly into loaded pitch correction plugins (Antares Auto-Tune, Waves Tune, MAutoPitch) in the rack.
+
 - **🎶 Studio DAW Transport Bar with Sleek Vector Icons**:
   - Supports loading and playback for MP3, WAV, FLAC, OGG, and AIFF files.
   - Studio-grade vector icons: **`▶` Play / `❚❚` Pause**, **`■` Stop**, **`⟳` Loop**, precision Seek bar, Volume slider, and time counter.
@@ -47,6 +80,20 @@ The application allows you to connect your microphone directly to professional V
   - 🎤 **HÁT LIVE (Singing)**: Engages the full vocal chain (Auto-Tune + EQ + Compressor + Reverb Aux).
   - 💬 **GIAO LƯU (Talk/Chat)**: Automatically bypasses Auto-Tune & Reverb while maintaining Noise Gate and Compression for crisp, intelligible speech.
   - 🔥 **AUTOTUNE (Hard-Tune)**: Delivers aggressive pitch correction and spatial processing for energetic genres.
+- **📺 Professional YouTube Karaoke Player (PRO Edition ⭐)**:
+  - **Embedded YouTube Karaoke Portal**: Search and stream karaoke backing tracks directly inside the DAW with an ad-free clean interface (**`🛡️ CHẶN QC / LIVE`**).
+  - **1-Touch YouTube Tone Detection (`🎯 DÒ TONE`)**: Automatically detects song titles and matches them against a 1,033+ song database to feed accurate root keys and scales directly into Auto-Tune.
+  - **Vocal Auto-Tune Modulation on Key Changes (`MOD MIC: [-1] [0] [+1] [+2]`)**: When the backing music naturally shifts key at the bridge or chorus, singer can press a button or hotkey to transpose Auto-Tune, **keeping the YouTube backing track 100% natural with zero pitch distortion**.
+  - **Real-Time YouTube Beat Transposition (`BEAT: [-3] ... [+3]`)**: Shift the backing track pitch in real-time when a suitable singer key is unavailable, with automatic Auto-Tune synchronization.
+  - **1-Click Male / Female Duet Switching (`[♂ NAM]` / `[♀ NỮ]`)**: Instantly toggle between male and female vocal keys with 0ms latency.
+  - **Live Keyboard Performance Shortcuts**:
+    - `]` (or `PageUp`): Transpose Auto-Tune +1 semitone (on song modulation).
+    - `[` (or `PageDown`): Transpose Auto-Tune -1 semitone.
+    - `+` / `-`: Transpose YouTube Beat pitch.
+    - `0`: Reset both Beat and Auto-Tune to original factory key.
+    - `M` or `1`: Switch Auto-Tune to Male key.
+    - `F` or `2`: Switch Auto-Tune to Female key.
+    - `D` or `Tab`: Fast toggle Male $\leftrightarrow$ Female keys.
 - **💖 Creator Support & QR Donation Modal**: Top header **`☕ DONATE`** button opens a high-resolution QR modal (VietQR MBBank & MoMo) with 1-click clipboard copy for account numbers and transfer notes.
 - **Custom UI Zoom Scaling**: 3 responsive scaling modes: **85% (Compact)**, **100% (Standard)**, and **125% (Large)** with auto-window centering.
 
@@ -171,6 +218,25 @@ To ensure crystal-clear stream audio with zero latency and no double-monitoring 
 
 ### 9. Adjusting UI Zoom
 - Click the **85%**, **100%**, or **125%** buttons on the top bar to scale the interface to match your display resolution.
+
+### 10. YouTube Karaoke Player & Performance Hotkeys (PRO Edition ⭐)
+- **Open Player**: Click the **`📺 YOUTUBE KARAOKE`** button on the top header (or launch tracks from the Songbook).
+- **Core Features**:
+  1. **🎯 1-Touch Tone Detection (`🎯 DÒ TONE (AUTO-KEY)`)**: Automatically detects song titles and syncs correct key and scale into Auto-Tune Pro.
+  2. **🎤 Vocal Auto-Tune Modulation on Key Changes (`MOD MIC: [-1] [0] [+1] [+2]`)**: When the song naturally modulates at the bridge or chorus, press the button or hotkey to transpose Auto-Tune, **keeping the YouTube video playback untouched**.
+  3. **🎛️ Real-Time YouTube Beat Transposition (`BEAT: [-3] ... [+3]`)**: Transpose the backing track in real-time when a suitable vocal key is not available, with automatic Auto-Tune synchronization.
+  4. **👫 1-Click Male / Female Duet Switching (`[♂ NAM]` / `[♀ NỮ]`)**: Instant toggle between male and female keys with 0ms latency.
+
+#### ⌨️ Live Performance Hotkeys Table:
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| **`]`** or **`PageUp`** | **Auto-Tune Transpose (+1)** | Transpose Auto-Tune +1 semitone when song modulates (YouTube beat untouched) |
+| **`[`** or **`PageDown`** | **Auto-Tune Transpose (-1)** | Transpose Auto-Tune -1 semitone (YouTube beat untouched) |
+| **`+`** / **`-`** (or `↑`/`↓`) | **Transpose YouTube Beat** | Shift YouTube backing track pitch with auto Auto-Tune sync |
+| **`0`** | **Reset to Original Key** | Reset both Beat and Auto-Tune to default key |
+| **`M`** or **`1`** | **Male Vocal Tone** | Switch Auto-Tune to Male key |
+| **`F`** or **`2`** | **Female Vocal Tone** | Switch Auto-Tune to Female key |
+| **`D`** or **`Tab`** | **Toggle Male $\leftrightarrow$ Female** | Fast toggle between Male and Female vocal keys |
 
 ---
 

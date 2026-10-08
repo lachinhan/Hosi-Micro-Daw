@@ -203,6 +203,14 @@ std::vector<SongItem> SongbookManager::searchSongs(const juce::String& query, co
                     genreMatches = true;
                 }
             }
+            else if (filterType == "HOT_TREND" || filterType == "CLOUD" || filterType == "TIKTOK")
+            {
+                if (songId.startsWith("trend_") || songId.startsWith("cloud_") ||
+                    songGenre.contains("trend") || songGenre.contains("tiktok") || songGenre.contains("hot"))
+                {
+                    genreMatches = true;
+                }
+            }
             else
             {
                 // Generic fallback contains
@@ -603,3 +611,118 @@ std::vector<std::pair<SongItem, SongbookManager::SongFitResult>> SongbookManager
 
     return rankedList;
 }
+
+void SongbookManager::syncFromCloudAsync(std::function<void(bool success, int newSongsAdded, const juce::String& statusMsg)> callback)
+{
+    if (isCloudSyncing.exchange(true))
+    {
+        if (callback)
+            callback(false, 0, juce::String::fromUTF8(u8"Đang trong quá trình đồng bộ..."));
+        return;
+    }
+
+    // Launch background thread
+    juce::Thread::launch([this, callback]() {
+        juce::String jsonText;
+
+        const std::vector<juce::String> cloudUrls = {
+            "https://raw.githubusercontent.com/lachinhan/Hosi-Micro-Daw/main/cloud/songbook_cloud.json",
+            "https://raw.githubusercontent.com/lachinhan/Hosi-Micro-Daw-Private/main/cloud/songbook_cloud.json",
+            "https://api.lachinhan.xyz/microdaw/v3/songbook_cloud.json"
+        };
+
+        for (const auto& urlStr : cloudUrls)
+        {
+            try
+            {
+                juce::URL url(urlStr);
+                auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+                                    .withConnectionTimeoutMs(4000);
+                std::unique_ptr<juce::InputStream> stream(url.createInputStream(options));
+                if (stream != nullptr)
+                {
+                    jsonText = stream->readEntireStreamAsString();
+                    if (jsonText.isNotEmpty() && jsonText.trim().startsWith("["))
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (...) {}
+        }
+
+        // Check local development fallback if network not reached
+        if (jsonText.isEmpty())
+        {
+            auto localCloud = juce::File::getCurrentWorkingDirectory().getChildFile("cloud").getChildFile("songbook_cloud.json");
+            if (localCloud.existsAsFile())
+                jsonText = localCloud.loadFileAsString();
+        }
+
+        if (jsonText.isNotEmpty())
+        {
+            auto parsed = juce::JSON::parse(jsonText);
+            if (parsed.isArray())
+            {
+                auto* arr = parsed.getArray();
+                std::vector<SongItem> cloudSongs;
+                for (const auto& itemVar : *arr)
+                {
+                    if (itemVar.isObject())
+                        cloudSongs.push_back(SongItem::fromVar(itemVar));
+                }
+
+                // Switch to message thread to safely update database
+                juce::MessageManager::callAsync([this, cloudSongs, callback]() {
+                    int addedCount = 0;
+                    for (const auto& cSong : cloudSongs)
+                    {
+                        bool exists = false;
+                        for (auto& existing : songs)
+                        {
+                            if (existing.id.equalsIgnoreCase(cSong.id) ||
+                                (existing.title.equalsIgnoreCase(cSong.title) && existing.artist.equalsIgnoreCase(cSong.artist)))
+                            {
+                                exists = true;
+                                if (existing.keyMale.isEmpty() && cSong.keyMale.isNotEmpty()) existing.keyMale = cSong.keyMale;
+                                if (existing.keyFemale.isEmpty() && cSong.keyFemale.isNotEmpty()) existing.keyFemale = cSong.keyFemale;
+                                break;
+                            }
+                        }
+
+                        if (!exists)
+                        {
+                            songs.push_back(cSong);
+                            addedCount++;
+                        }
+                    }
+
+                    if (addedCount > 0)
+                    {
+                        saveDatabase();
+                    }
+
+                    isCloudSyncing.store(false);
+
+                    if (onDatabaseChanged)
+                        onDatabaseChanged();
+
+                    juce::String statusMessage = juce::String::fromUTF8(u8"✓ Đồng bộ thành công! ") + 
+                        (addedCount > 0 ? (juce::String::fromUTF8(u8"Đã nạp thêm ") + juce::String(addedCount) + juce::String::fromUTF8(u8" bài hát Hot Trend mới."))
+                                        : juce::String::fromUTF8(u8"Kho bài hát của bạn đã là mới nhất."));
+
+                    if (callback)
+                        callback(true, addedCount, statusMessage);
+                });
+                return;
+            }
+        }
+
+        juce::MessageManager::callAsync([this, callback]() {
+            isCloudSyncing.store(false);
+            if (callback)
+                callback(false, 0, juce::String::fromUTF8(u8"Không thể kết nối đến máy chủ Cloud. Vui lòng kiểm tra Internet."));
+        });
+    });
+}
+

@@ -139,6 +139,10 @@ public:
         const juce::String& genreFilter = "ALL"
     ) const;
 
+    // ☁️ Cloud Songbook Synchronization
+    void syncFromCloudAsync(std::function<void(bool success, int newSongsAdded, const juce::String& statusMsg)> callback = nullptr);
+    bool isSyncingCloud() const noexcept { return isCloudSyncing.load(); }
+
     static juce::String removeVietnameseAccents(const juce::String& input);
     static void parseKeyAndScale(const juce::String& toneStr, int& outRootNote, bool& outIsMinor);
     static juce::String transposeKey(const juce::String& toneStr, int semitoneShift);
@@ -148,6 +152,7 @@ public:
 private:
     std::vector<SongItem> songs;
     juce::File userStorageFile;
+    std::atomic<bool> isCloudSyncing{ false };
 
     void loadDefaultEmbeddedDatabase();
     void loadUserDatabase();

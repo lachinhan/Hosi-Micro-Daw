@@ -4,6 +4,29 @@
 #include <juce_data_structures/juce_data_structures.h>
 #include "../audio/GraphManager.h"
 #include <vector>
+#include <functional>
+
+struct ArtistPresetItem
+{
+    juce::String id;
+    juce::String name;
+    juce::String artist;
+    juce::String category;
+    juce::String description;
+    juce::var dspSettings;
+
+    static ArtistPresetItem fromVar(const juce::var& v)
+    {
+        ArtistPresetItem item;
+        item.id = v["id"].toString();
+        item.name = v["name"].toString();
+        item.artist = v["artist"].toString();
+        item.category = v["category"].toString();
+        item.description = v["description"].toString();
+        item.dspSettings = v["dsp"];
+        return item;
+    }
+};
 
 class PresetManager
 {
@@ -42,11 +65,20 @@ public:
     juce::ValueTree exportStateAsValueTree() const;
     void restoreStateFromValueTree(const juce::ValueTree& tree);
 
+    // ☁️ Artist Preset Cloud
+    void fetchArtistPresetsCloudAsync(std::function<void(bool success, const std::vector<ArtistPresetItem>& presets, const juce::String& msg)> callback = nullptr);
+    bool applyArtistPreset(const ArtistPresetItem& preset);
+    const std::vector<ArtistPresetItem>& getCachedArtistPresets() const noexcept { return cachedArtistPresets; }
+    bool isFetchingCloudPresets() const noexcept { return isFetchingPresets.load(); }
+
 private:
     GraphManager& graphManager;
     QuickPresetType currentPreset{ QuickPresetType::LiveSinging };
     bool isTalkMode{ false };
     std::vector<bool> preTalkBypassStates;
+
+    std::vector<ArtistPresetItem> cachedArtistPresets;
+    std::atomic<bool> isFetchingPresets{ false };
 
     int savedWindowWidth{ 1140 };
     int savedWindowHeight{ 760 };
@@ -54,3 +86,4 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PresetManager)
 };
+

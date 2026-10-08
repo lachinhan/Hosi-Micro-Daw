@@ -539,6 +539,111 @@ void BuiltInDspAudioProcessor::loadPreset(VocalPreset preset)
         setLimiterThresholdDb(-0.5f);
         break;
 
+    case VocalPreset::ArtistChuBin:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.75f);
+        setAiDeReverbEnabled(false);
+        setGateEnabled(true);
+        setGateThresholdDb(-42.0f);
+        setEqEnabled(true);
+        setEqLowGainDb(-3.0f);
+        setEqMidGainDb(1.5f);
+        setEqHighGainDb(4.0f);
+        setCompEnabled(true);
+        setCompThresholdDb(-18.0f);
+        setCompRatio(3.5f);
+        setCompMakeupDb(3.0f);
+        setReverbEnabled(true);
+        setReverbBpmSync(true);
+        setReverbBarLength(TempoSyncEngine::ReverbBarLength::OneBar);
+        setReverbWetMix(0.22f);
+        setDelayEnabled(true);
+        setDelayBpmSync(true);
+        setDelaySubdivision(TempoSyncEngine::DelaySubdivision::Eighth);
+        setDelayFeedback(0.35f);
+        setDelayWetMix(0.25f);
+        setLimiterEnabled(true);
+        setLimiterThresholdDb(-0.3f);
+        break;
+
+    case VocalPreset::ArtistLeQuyen:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.70f);
+        setAiDeReverbEnabled(true);
+        setAiDeReverbAmount(0.40f);
+        setGateEnabled(true);
+        setGateThresholdDb(-46.0f);
+        setEqEnabled(true);
+        setEqLowGainDb(1.0f);
+        setEqMidGainDb(2.5f);
+        setEqHighGainDb(2.0f);
+        setCompEnabled(true);
+        setCompThresholdDb(-14.0f);
+        setCompRatio(2.0f);
+        setCompMakeupDb(2.0f);
+        setReverbEnabled(true);
+        setReverbBpmSync(true);
+        setReverbBarLength(TempoSyncEngine::ReverbBarLength::TwoBars);
+        setReverbWetMix(0.38f);
+        setDelayEnabled(true);
+        setDelayBpmSync(true);
+        setDelaySubdivision(TempoSyncEngine::DelaySubdivision::Quarter);
+        setDelayFeedback(0.25f);
+        setDelayWetMix(0.18f);
+        setLimiterEnabled(true);
+        setLimiterThresholdDb(-0.5f);
+        break;
+
+    case VocalPreset::ArtistDatG:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.60f);
+        setAiDeReverbEnabled(false);
+        setGateEnabled(false);
+        setEqEnabled(true);
+        setEqLowGainDb(0.5f);
+        setEqMidGainDb(0.5f);
+        setEqHighGainDb(1.5f);
+        setCompEnabled(true);
+        setCompThresholdDb(-12.0f);
+        setCompRatio(1.8f);
+        setCompMakeupDb(1.5f);
+        setReverbEnabled(true);
+        setReverbBpmSync(false);
+        setReverbSize(0.55f);
+        setReverbDamp(0.40f);
+        setReverbWetMix(0.25f);
+        setDelayEnabled(false);
+        setLimiterEnabled(true);
+        setLimiterThresholdDb(-0.5f);
+        break;
+
+    case VocalPreset::ArtistVinahouse:
+        setAiDenoiseEnabled(true);
+        setAiDenoiseAmount(0.85f);
+        setAiDeReverbEnabled(false);
+        setGateEnabled(true);
+        setGateThresholdDb(-40.0f);
+        setEqEnabled(true);
+        setEqLowGainDb(-4.0f);
+        setEqMidGainDb(2.0f);
+        setEqHighGainDb(4.5f);
+        setCompEnabled(true);
+        setCompThresholdDb(-20.0f);
+        setCompRatio(4.0f);
+        setCompMakeupDb(3.5f);
+        setReverbEnabled(true);
+        setReverbBpmSync(true);
+        setReverbBarLength(TempoSyncEngine::ReverbBarLength::OneBar);
+        setReverbWetMix(0.28f);
+        setDelayEnabled(true);
+        setDelayBpmSync(true);
+        setDelaySubdivision(TempoSyncEngine::DelaySubdivision::TripletEighth);
+        setDelayFeedback(0.45f);
+        setDelayWetMix(0.30f);
+        setLimiterEnabled(true);
+        setLimiterThresholdDb(-0.2f);
+        break;
+
     case VocalPreset::BypassAll:
         setAiDenoiseEnabled(false);
         setAiDeReverbEnabled(false);

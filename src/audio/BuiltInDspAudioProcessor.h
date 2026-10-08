@@ -19,7 +19,11 @@ public:
         KaraokeHall = 2,
         PodcastClean = 3,
         BypassAll = 4,
-        FactoryReset = 5
+        FactoryReset = 5,
+        ArtistChuBin = 6,
+        ArtistLeQuyen = 7,
+        ArtistDatG = 8,
+        ArtistVinahouse = 9
     };
 
     BuiltInDspAudioProcessor();

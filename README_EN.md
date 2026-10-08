@@ -48,6 +48,11 @@ The application allows you to connect your microphone directly to professional V
    - **Auto-Tune Modulation on Key Changes (`MOD MIC: [-1] [0] [+1] [+2]`)**: Transpose Auto-Tune when songs modulate key at the bridge or chorus, **keeping YouTube backing audio 100% natural and unpitched**.
    - **Instant Male / Female Duet Switching (`[♂ NAM]` / `[♀ NỮ]`)**: Seamlessly switch Auto-Tune target keys with 0ms latency during duets.
 
+6. **☁️ Cloud Songbook & Artist Preset Cloud (Online Songbook & Studio Presets)**:
+   - **On-Demand Hot Trend Sync (`☁️ Đồng Bộ Cloud`)**: Background non-blocking HTTPS synchronization fetching the latest viral TikTok/YouTube songs without overwriting custom or favorite songs `❤️`.
+   - **Studio Artist Preset Cloud**: 1-Click loading of professional vocal chains crafted for signature genres (*Dance/Trap Chu Bin, Deep Bolero Lệ Quyên, Acoustic Mộc Đạt G, Streamer Talkshow Radio, Vinahouse Party*).
+   - **Automated Management Tool**: Bundled with `tools/sync_cloud_data.py` for automated cloud validation and crawling.
+
 ---
 
 ### 🎛️ CORE STUDIO & LIVESTREAM DAW ENGINE
