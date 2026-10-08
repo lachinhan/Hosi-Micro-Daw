@@ -38,14 +38,14 @@ public:
     double getHostBpm() const noexcept { return hostBpm.load(std::memory_order_relaxed); }
 
     // --- 1. AI Noise & Room De-Reverb Shield ---
-    void setAiDenoiseEnabled(bool enabled) noexcept { aiNoiseSuppressor.setEnabled(enabled); }
+    void setAiDenoiseEnabled(bool enabled) noexcept { aiNoiseSuppressor.setEnabled(enabled); sendChangeMessage(); }
     bool isAiDenoiseEnabled() const noexcept { return aiNoiseSuppressor.isEnabled(); }
-    void setAiDenoiseAmount(float amount) noexcept { aiNoiseSuppressor.setDenoiseAmount(amount); }
+    void setAiDenoiseAmount(float amount) noexcept { aiNoiseSuppressor.setDenoiseAmount(amount); sendChangeMessage(); }
     float getAiDenoiseAmount() const noexcept { return aiNoiseSuppressor.getDenoiseAmount(); }
 
-    void setAiDeReverbEnabled(bool enabled) noexcept { aiNoiseSuppressor.setDeReverbEnabled(enabled); }
+    void setAiDeReverbEnabled(bool enabled) noexcept { aiNoiseSuppressor.setDeReverbEnabled(enabled); sendChangeMessage(); }
     bool isAiDeReverbEnabled() const noexcept { return aiNoiseSuppressor.isDeReverbEnabled(); }
-    void setAiDeReverbAmount(float amount) noexcept { aiNoiseSuppressor.setDeReverbAmount(amount); }
+    void setAiDeReverbAmount(float amount) noexcept { aiNoiseSuppressor.setDeReverbAmount(amount); sendChangeMessage(); }
     float getAiDeReverbAmount() const noexcept { return aiNoiseSuppressor.getDeReverbAmount(); }
 
     float getAiNoiseReductionDb() const noexcept { return aiNoiseSuppressor.getNoiseReductionDb(); }

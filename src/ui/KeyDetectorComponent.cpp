@@ -23,6 +23,11 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
         beatPlayer->addChangeListener(this);
     }
 
+    if (auto* dsp = graphManager.getBuiltInDsp())
+    {
+        dsp->addChangeListener(this);
+    }
+
     graphManager.getTempoSyncEngine().addChangeListener(this);
 
     // --- Load Beat Button ---
@@ -129,8 +134,10 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
         auto* dsp = graphManager.getBuiltInDsp();
         if (dsp != nullptr)
         {
-            bool nextState = !dsp->isAiDenoiseEnabled();
+            const bool currentlyOn = dsp->isAiDenoiseEnabled();
+            const bool nextState = !currentlyOn;
             dsp->setAiDenoiseEnabled(nextState);
+            dsp->setAiDeReverbEnabled(nextState);
             updateAiShieldButtonUI();
         }
     };
@@ -250,6 +257,10 @@ KeyDetectorComponent::~KeyDetectorComponent()
 {
     stopTimer();
     graphManager.getTempoSyncEngine().removeChangeListener(this);
+    if (auto* dsp = graphManager.getBuiltInDsp())
+    {
+        dsp->removeChangeListener(this);
+    }
     if (beatPlayer != nullptr)
     {
         beatPlayer->removeChangeListener(this);
@@ -920,14 +931,14 @@ void KeyDetectorComponent::updateAiShieldButtonUI()
     auto* dsp = graphManager.getBuiltInDsp();
     if (dsp == nullptr) return;
 
-    const bool isAiOn = dsp->isAiDenoiseEnabled() || dsp->isAiDeReverbEnabled();
+    const bool isAiOn = dsp->isAiDenoiseEnabled();
     const float redDb = dsp->getAiNoiseReductionDb();
 
     if (isAiOn)
     {
-        if (redDb > 1.0f)
+        if (redDb < -1.0f)
         {
-            aiShieldButton.setButtonText(juce::String::fromUTF8(u8"🛡️ -") + juce::String(static_cast<int>(std::round(redDb))) + "dB");
+            aiShieldButton.setButtonText(juce::String::fromUTF8(u8"🛡️ ") + juce::String(static_cast<int>(std::round(redDb))) + "dB");
         }
         else
         {

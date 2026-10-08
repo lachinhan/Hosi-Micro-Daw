@@ -107,7 +107,9 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
     setupModuleHeader(aiPwrButton, aiTitleLabel, juce::String::fromUTF8(u8"1. 🛡️ AI NOISE & DE-REVERB"));
     aiPwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
-            dspProcessor->setAiDenoiseEnabled(!dspProcessor->isAiDenoiseEnabled());
+            const bool nextState = !dspProcessor->isAiDenoiseEnabled();
+            dspProcessor->setAiDenoiseEnabled(nextState);
+            dspProcessor->setAiDeReverbEnabled(nextState);
             updateAllUI();
         }
     };
