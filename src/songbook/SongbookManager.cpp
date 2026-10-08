@@ -1,5 +1,6 @@
 #include "SongbookManager.h"
 #include "../audio/KeyDetector.h"
+#include "../audio/VocalRangeDetector.h"
 #include <BinaryData.h>
 
 SongbookManager::SongbookManager()
@@ -479,4 +480,126 @@ juce::String SongbookManager::transposeKey(const juce::String& toneStr, int semi
     if (newRoot < 0) newRoot += 12;
     juce::String note = KeyDetector::getNoteName(newRoot);
     return isMinor ? (note + "m") : note;
+}
+
+SongbookManager::SongFitResult SongbookManager::evaluateSongFit(const SongItem& item, int userLowestMidi, int userHighestMidi) const
+{
+    SongFitResult result;
+    
+    // Safety clamp user ranges
+    int uLow = std::clamp(userLowestMidi, 36, 84);
+    int uHigh = std::clamp(userHighestMidi, uLow + 4, 96);
+    int uMid = (uLow + uHigh) / 2;
+
+    // Determine target primary key based on user vocal profile
+    bool isUserMale = (uMid < 64);
+    juce::String chosenKey = isUserMale ? (item.keyMale.isNotEmpty() ? item.keyMale : item.keyOriginal)
+                                        : (item.keyFemale.isNotEmpty() ? item.keyFemale : item.keyOriginal);
+
+    if (chosenKey.isEmpty())
+        chosenKey = item.getEffectiveTone();
+
+    result.baseKey = chosenKey;
+
+    int root = 0;
+    bool isMinor = false;
+    parseKeyAndScale(chosenKey, root, isMinor);
+
+    // Calculate estimated song range
+    int baseMidiRoot = 0;
+    if (isUserMale)
+    {
+        // Male root in MIDI 43-55 (G2 to G3)
+        baseMidiRoot = (root >= 7) ? (36 + root) : (48 + root);
+    }
+    else
+    {
+        // Female root in MIDI 48-60 (C3 to C4)
+        baseMidiRoot = (root >= 7) ? (41 + root) : (53 + root);
+    }
+
+    int songLow = isMinor ? (baseMidiRoot - 2) : (baseMidiRoot - 4);
+    int songHigh = isMinor ? (baseMidiRoot + 22) : (baseMidiRoot + 19);
+
+    result.songLowestMidi = songLow;
+    result.songHighestMidi = songHigh;
+
+    int deltaHigh = songHigh - uHigh;
+    int deltaLow = uLow - songLow;
+
+    int shift = 0;
+    if (deltaHigh > 0)
+    {
+        // Song is too high for user -> suggest lowering
+        shift = -std::min(4, deltaHigh);
+    }
+    else if (deltaLow > 2 && deltaHigh < -3)
+    {
+        // Song is too low and has plenty of headroom at the top -> suggest raising
+        shift = std::min(3, (deltaLow + 1) / 2);
+    }
+
+    result.recommendedShift = shift;
+    result.recommendedTone = (shift == 0) ? chosenKey : transposeKey(chosenKey, shift);
+
+    if (shift == 0)
+    {
+        if (songHigh <= uHigh && songLow >= uLow)
+        {
+            result.fitScore = 100;
+            result.fitBadge = juce::String::fromUTF8(u8"💯 100% Vừa Vặn");
+            result.advice = juce::String::fromUTF8(u8"Cực kỳ vừa vặn! Nốt cao nhất (") + VocalRangeDetector::midiToNoteName(songHigh) + juce::String::fromUTF8(u8") nằm hoàn hảo trong tầm giọng của bạn.");
+        }
+        else
+        {
+            result.fitScore = 95;
+            result.fitBadge = juce::String::fromUTF8(u8"⭐ 95% Rất Hợp");
+            result.advice = juce::String::fromUTF8(u8"Quãng giọng rất đẹp và phù hợp hoàn hảo với bài hát này.");
+        }
+    }
+    else if (shift < 0)
+    {
+        result.fitScore = std::max(65, 100 - std::abs(shift) * 8);
+        result.fitBadge = juce::String::fromUTF8(u8"🎯 Hạ ") + juce::String(shift) + juce::String::fromUTF8(u8" Tone");
+        result.advice = juce::String::fromUTF8(u8"Nốt cao nhất đạt ") + VocalRangeDetector::midiToNoteName(songHigh) + juce::String::fromUTF8(u8". Hãy hạ ") + juce::String(shift) + juce::String::fromUTF8(u8" semitones để hát tròn vành rõ chữ không bị với!");
+    }
+    else
+    {
+        result.fitScore = std::max(70, 100 - shift * 7);
+        result.fitBadge = juce::String::fromUTF8(u8"⚡ Tăng +") + juce::String(shift) + juce::String::fromUTF8(u8" Tone");
+        result.advice = juce::String::fromUTF8(u8"Tăng +") + juce::String(shift) + juce::String::fromUTF8(u8" semitones giúp giọng sáng bay bổng hơn và không bị quá trầm.");
+    }
+
+    return result;
+}
+
+std::vector<std::pair<SongItem, SongbookManager::SongFitResult>> SongbookManager::getAiRecommendedSongs(
+    int userLowestMidi,
+    int userHighestMidi,
+    const juce::String& query,
+    const juce::String& genreFilter
+) const
+{
+    // First retrieve filtered songs matching search query
+    auto candidateSongs = searchSongs(query, genreFilter);
+
+    std::vector<std::pair<SongItem, SongFitResult>> rankedList;
+    rankedList.reserve(candidateSongs.size());
+
+    for (const auto& song : candidateSongs)
+    {
+        auto fit = evaluateSongFit(song, userLowestMidi, userHighestMidi);
+        rankedList.push_back({ song, fit });
+    }
+
+    // Sort by fit score descending, then by favorite, then alphabetically
+    std::sort(rankedList.begin(), rankedList.end(), [](const auto& a, const auto& b) {
+        if (a.second.fitScore != b.second.fitScore)
+            return a.second.fitScore > b.second.fitScore;
+        if (a.first.isFavorite != b.first.isFavorite)
+            return a.first.isFavorite > b.first.isFavorite;
+        return a.first.title < b.first.title;
+    });
+
+    return rankedList;
 }

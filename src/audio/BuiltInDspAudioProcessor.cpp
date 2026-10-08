@@ -56,7 +56,10 @@ void BuiltInDspAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     currentSmoothedDelaySamplesR = static_cast<float>(currentSampleRate * (initialTimeMs * 0.00135f));
 
     limiterPeakEnv = 0.0f;
+
+    vocalRangeDetector.prepare(currentSampleRate, samplesPerBlock);
 }
+
 
 void BuiltInDspAudioProcessor::releaseResources()
 {
@@ -139,6 +142,10 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     {
         aiVocalProfiler.processBlock(buffer);
     }
+
+    // AI Vocal Range Detector Feed (Real-time pitch and vocal scan)
+    vocalRangeDetector.processBlock(buffer);
+
 
     // If completely bypassed, return immediately with 0 overhead
     if (!hasAi && !hasGate && !hasEq && !hasComp && !hasDelay && !hasReverb && !hasLimiter)

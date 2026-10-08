@@ -7,6 +7,7 @@
 #include "TempoSyncEngine.h"
 #include "AiNoiseSuppressor.h"
 #include "AiVocalProfiler.h"
+#include "VocalRangeDetector.h"
 
 class BuiltInDspAudioProcessor : public juce::AudioProcessor, public juce::ChangeBroadcaster
 {
@@ -60,6 +61,10 @@ public:
     float getVocalProfilingProgress() const noexcept { return aiVocalProfiler.getProgress(); }
     const AiVocalProfiler::ProfileResult& getVocalProfileResult() const noexcept { return aiVocalProfiler.getLastResult(); }
     void applyVocalProfileEq(AiVocalProfiler::ProfileStyle style);
+
+    // --- AI Vocal Range Detector (Smart Song Recommendation) ---
+    VocalRangeDetector& getVocalRangeDetector() noexcept { return vocalRangeDetector; }
+
 
     // --- 2. Noise Gate Controls ---
     void setGateEnabled(bool enabled) noexcept
@@ -243,6 +248,8 @@ private:
     // --- AI Noise Suppressor & Room De-Reverb ---
     AiNoiseSuppressor aiNoiseSuppressor;
     AiVocalProfiler aiVocalProfiler;
+    VocalRangeDetector vocalRangeDetector;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BuiltInDspAudioProcessor)
 };
+

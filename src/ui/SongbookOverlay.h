@@ -4,11 +4,12 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "../songbook/SongbookManager.h"
 #include "../audio/KeyDetector.h"
+#include "../audio/VocalRangeDetector.h"
 
 class SongbookOverlay : public juce::Component, public juce::ListBoxModel, private juce::TextEditor::Listener
 {
 public:
-    SongbookOverlay(SongbookManager& songbookMgr);
+    SongbookOverlay(SongbookManager& songbookMgr, VocalRangeDetector& detector);
     ~SongbookOverlay() override = default;
 
     void paint(juce::Graphics& g) override;
@@ -27,6 +28,7 @@ public:
     std::function<void()> onCloseClicked;
     std::function<void(int rootNote, KeyDetector::ScaleType scale, const juce::String& songName)> onApplyTone;
     std::function<void(double bpm, const juce::String& songName)> onApplyTempo;
+    std::function<void()> onOpenVocalRangeDetector;
 #if HOSI_PRO_EDITION
     std::function<void(const juce::String& songName)> onPlayYouTubeBeat;
 #endif
@@ -34,10 +36,13 @@ public:
     void refreshList();
     void selectSong(int index);
     void applySelectedTone(const juce::String& toneStr);
+    void setFilterToAiMatch();
 
 private:
     SongbookManager& songbookManager;
+    VocalRangeDetector& vocalRangeDetector;
     std::vector<SongItem> displayedSongs;
+    std::vector<SongbookManager::SongFitResult> displayedFits;
     int selectedIndex{ -1 };
     int semitoneOffset{ 0 };
 
@@ -48,9 +53,10 @@ private:
     // Search & Filter
     juce::TextEditor searchEditor;
     juce::ComboBox genreFilterCombo;
+    juce::TextButton aiRangeButton{ juce::String::fromUTF8(u8"🎙️ Đo Âm Vực AI") };
     juce::TextButton addSongButton{ juce::String::fromUTF8(u8"➕ Thêm Bài") };
-    juce::TextButton importButton{ juce::String::fromUTF8(u8"📥 Nhập JSON") };
-    juce::TextButton exportButton{ juce::String::fromUTF8(u8"📤 Xuất JSON") };
+    juce::TextButton importButton{ juce::String::fromUTF8(u8"📥 Nhập") };
+    juce::TextButton exportButton{ juce::String::fromUTF8(u8"📤 Xuất") };
 
     // List View
     juce::ListBox songListBox;
@@ -59,6 +65,10 @@ private:
     juce::Label detailTitleLabel;
     juce::Label detailArtistLabel;
     juce::Label detailInfoLabel;
+
+    // AI Smart Match Box
+    juce::Label aiMatchBanner;
+    juce::TextButton applyAiToneButton{ juce::String::fromUTF8(u8"✨ DÙNG TONE AI GỢI Ý") };
 
     juce::TextButton maleToneButton;
     juce::TextButton femaleToneButton;

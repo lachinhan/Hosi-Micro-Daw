@@ -118,8 +118,13 @@ set(COMMON_DAW_SOURCES
     src/audio/AiVocalProfiler.h
     src/ui/AiVocalProfilerOverlay.cpp
     src/ui/AiVocalProfilerOverlay.h
+    src/audio/VocalRangeDetector.cpp
+    src/audio/VocalRangeDetector.h
+    src/ui/AiVocalRangeOverlay.cpp
+    src/ui/AiVocalRangeOverlay.h
     src/audio/BuiltInDspAudioProcessor.cpp
     src/audio/BuiltInDspAudioProcessor.h
+
     src/ui/BuiltInDspComponent.cpp
     src/ui/BuiltInDspComponent.h
     src/audio/TempoSyncEngine.cpp

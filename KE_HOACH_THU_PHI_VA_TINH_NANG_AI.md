@@ -50,16 +50,26 @@
 
 ---
 
-### 2. 🎵 Tính Năng 2: Nhận Diện Âm Vực & Đề Xuất Bài Hát Phù Hợp (Smart Song Recommendation)
+### 2. 🎵 Tính Năng 2: Nhận Diện Âm Vực & Đề Xuất Bài Hát Phù Hợp (Smart Vocal Range & Song Recommendation) - [x] **ĐÃ HOÀN THÀNH & TÍCH HỢP 100% VÀO BẢN PRO v3.x**
 * **Vấn đề của người dùng**: Người hát thường chọn bài theo sở thích nhưng hay bị "đuối hơi", "tịt nốt cao" hoặc "quá trầm không hát được", dẫn đến vỡ giọng trên livestream.
-* **Giải pháp AI**:
-  1. **Vocal Range Detector**: Khi người dùng hát khởi động, thuật toán Pitch Tracking (YIN/PYIN) tự động ghi nhận **Quãng giọng thực tế** (Ví dụ: Từ `C3` đến `E4`).
-  2. **Smart Database Matching**: Hệ thống tự đối chiếu với Database Sổ Tone (1.000+ bài hát):
-     - Lọc danh sách: *"Các bài hát vừa vặn nhất với chất giọng của bạn (Độ khó: 100% Phù hợp)"*.
-     - Gợi ý bài Tone Nam / Nữ tương thích mà không cần gằn giọng.
-  3. **Auto Transpose Suggestion**: Đối với những bài hát user rất thích nhưng nốt cao nhất vượt quá âm vực 2 bán âm, AI tự động gợi ý: *"Hạ Tone Beat xuống -2 semitones để vừa vặn hoàn hảo"*.
+* **Giải pháp AI Đã Triển Khai Hoàn Hảo**:
+  1. **Lõi Đo Quãng Giọng Thời Gian Thực (`VocalRangeDetector`)**:
+     - Thuật toán Pitch Tracking (Autocorrelation + Parabolic Interpolation + Stability Filter) đo F0 chính xác từ 65 Hz (C2) đến 1.050 Hz (C6).
+     - **Chế độ 5s Vocal Range Scan**: Người dùng bấm `[ 🎙️ BẮT ĐẦU ĐO ÂM VỰC (5s) ]`, ngân từ nốt trầm nhất đến nốt cao nhất; AI tự động ghi nhận biên độ quãng giọng (ví dụ: `C3` đến `A4` - 21 bán âm) và lưu cấu hình bền vững vào máy.
+     - **Phân loại chất giọng chuẩn thanh nhạc**: *Nam Trầm (Baritone/Bass), Nam Cao (Tenor), Nữ Trung (Alto/Mezzo), Nữ Cao (Soprano)*.
+  2. **Smart Songbook Database Matching (1.033+ Bài Hát)**:
+     - Lõi `SongbookManager` tự động đối chiếu quãng giọng của bài hát (Tone Nam / Tone Nữ / Tone Gốc) với quãng giọng người dùng.
+     - Bộ lọc thông minh: `[ 🎯 GỢI Ý VỪA GIỌNG AI (SMART MATCH) ]` xếp hạng các bài hát có **Fit Score cao nhất (100% Vừa Vặn, 95% Rất Hợp)** lên đầu danh sách.
+  3. **Auto Transpose Suggestion (Gợi Ý Dịch Tone Thông Minh)**:
+     - Khi một bài hát vượt quá nốt cao của người dùng 1-2 bán âm, AI tự động hiển thị huy hiệu & lời khuyên: *"🎯 Hạ -2 Tone: Nốt cao nhất đạt G4, hãy hạ -2 semitones để hát tròn vành rõ chữ không bị với"*.
+     - Nút bấm 1-Click `[ ✨ DÙNG TONE AI GỢI Ý ]`: Tự động nạp tone đã tối ưu vào Auto-Tune và mở Beat YouTube tương ứng.
+  4. **Giao Diện Trực Quan (`AiVocalRangeOverlay`)**:
+     - Đồng hồ đo quãng giọng Piano Roll (C2 ➔ C6) với thanh dải phát sáng theo âm vực người dùng và con trỏ nốt nhạc nhảy thời gian thực (Live Bouncing Pitch Pin).
+     - Cho phép tinh chỉnh thủ công nốt trầm / nốt cao hoặc đo tự động bằng giọng hát.
+     - Danh sách Top 5 bài hát vừa giọng nhất đề xuất tức thì ngay trong hộp thoại với nút `[ ⚡ Hát Ngay ]`.
 
 ---
+
 
 ### 3. 🛡️ Tính Năng 3: AI Real-Time Denoise & Room De-reverb (DeepFilter AI Shield) - [x] **ĐÃ HOÀN THÀNH & TÍCH HỢP 100% VÀO BẢN PRO v3.x**
 * **Giải pháp kỹ thuật siêu nhẹ (C++ RNNoise / DeepFilter GRU)**: Trọng số AI được biên dịch trực tiếp vào mã nguồn C++, dung lượng tăng thêm chỉ **~0.8 MB**, chiếm CPU < 1.5%.

@@ -8,6 +8,7 @@
 #include "ui/AudioSettingsOverlay.h"
 #include "ui/DonateOverlay.h"
 #include "ui/SongbookOverlay.h"
+#include "ui/AiVocalRangeOverlay.h"
 #include "ui/KeyDetectorComponent.h"
 #include "ui/SoundboardComponent.h"
 #include "ui/BuiltInDspComponent.h"
@@ -161,6 +162,10 @@ private:
     std::unique_ptr<SongbookOverlay> songbookOverlay;
     bool isSongbookOverlayVisible{ false };
 
+    // AI Vocal Range & Song Recommendation Overlay
+    std::unique_ptr<class AiVocalRangeOverlay> vocalRangeOverlay;
+    bool isVocalRangeOverlayVisible{ false };
+
 #if HOSI_PRO_EDITION
     // Mini YouTube Karaoke Player (PRO Feature)
     juce::TextButton youtubeButton{ juce::String::fromUTF8(u8"📺 YOUTUBE BEAT") };
@@ -182,9 +187,11 @@ private:
     void showSettings(bool show);
     void showDonate(bool show);
     void showSongbook(bool show);
+    void showVocalRangeOverlay(bool show);
 #if HOSI_PRO_EDITION
     void showYouTubePlayer(bool show, const juce::String& initialSongName = {});
 #endif
+
     void updatePresetButtonsUI();
     void updateMuteButtonUI();
     void updateInputSourceButtonUI();

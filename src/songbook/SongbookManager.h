@@ -116,6 +116,29 @@ public:
     bool exportToJson(const juce::File& destinationFile) const;
     bool importFromJson(const juce::File& sourceFile);
 
+    struct SongFitResult
+    {
+        int fitScore{ 100 }; // 0 to 100%
+        int recommendedShift{ 0 }; // Semitone shift relative to best tone (-4 to +4)
+        juce::String baseKey; // e.g. "Am"
+        juce::String recommendedTone; // e.g. "Gm" (if -2)
+        juce::String fitBadge; // "💯 100% Vừa Vặn", "🎯 Hạ -2 Tone", "⭐ 95% Hợp Giọng"
+        juce::String advice; // Detailed explanation
+        int songLowestMidi{ 45 };
+        int songHighestMidi{ 67 };
+    };
+
+    // Evaluate how well a song fits a user's vocal range
+    SongFitResult evaluateSongFit(const SongItem& item, int userLowestMidi, int userHighestMidi) const;
+
+    // Search / filter songs with AI compatibility ranking
+    std::vector<std::pair<SongItem, SongFitResult>> getAiRecommendedSongs(
+        int userLowestMidi,
+        int userHighestMidi,
+        const juce::String& query = {},
+        const juce::String& genreFilter = "ALL"
+    ) const;
+
     static juce::String removeVietnameseAccents(const juce::String& input);
     static void parseKeyAndScale(const juce::String& toneStr, int& outRootNote, bool& outIsMinor);
     static juce::String transposeKey(const juce::String& toneStr, int semitoneShift);
@@ -131,3 +154,4 @@ private:
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SongbookManager)
 };
+

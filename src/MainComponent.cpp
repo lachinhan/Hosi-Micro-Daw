@@ -193,10 +193,17 @@ MainComponent::MainComponent()
     };
     addChildComponent(donateOverlay.get());
 
-    // Songbook Overlay
-    songbookOverlay = std::make_unique<SongbookOverlay>(songbookManager);
+    // Songbook Overlay & AI Vocal Range
+    auto* dsp = audioEngine.getGraphManager().getBuiltInDsp();
+    jassert(dsp != nullptr);
+    auto& vocalDetector = dsp->getVocalRangeDetector();
+    songbookOverlay = std::make_unique<SongbookOverlay>(songbookManager, vocalDetector);
+
     songbookOverlay->onCloseClicked = [this]() {
         showSongbook(false);
+    };
+    songbookOverlay->onOpenVocalRangeDetector = [this]() {
+        showVocalRangeOverlay(true);
     };
     songbookOverlay->onApplyTone = [this](int rootNote, KeyDetector::ScaleType scale, const juce::String& songName) {
         if (keyDetectorBar != nullptr)
@@ -213,6 +220,36 @@ MainComponent::MainComponent()
     };
 #endif
     addChildComponent(songbookOverlay.get());
+
+    // AI Vocal Range & Song Recommendation Overlay
+    vocalRangeOverlay = std::make_unique<AiVocalRangeOverlay>(vocalDetector, songbookManager);
+    vocalRangeOverlay->onCloseClicked = [this]() {
+        showVocalRangeOverlay(false);
+    };
+    vocalRangeOverlay->onApplyTone = [this](int rootNote, KeyDetector::ScaleType scale, const juce::String& songName) {
+        if (keyDetectorBar != nullptr)
+        {
+            keyDetectorBar->applyKeyToAutoTune(rootNote, scale, songName);
+        }
+    };
+    vocalRangeOverlay->onApplyTempo = [this](double bpm, const juce::String& songName) {
+        audioEngine.getGraphManager().getTempoSyncEngine().setBpm(bpm, songName);
+    };
+#if HOSI_PRO_EDITION
+    vocalRangeOverlay->onPlayYouTubeBeat = [this](const juce::String& songName) {
+        showYouTubePlayer(true, songName);
+    };
+#endif
+    vocalRangeOverlay->onOpenFullSongbookAi = [this]() {
+        showVocalRangeOverlay(false);
+        showSongbook(true);
+        if (songbookOverlay != nullptr)
+        {
+            songbookOverlay->setFilterToAiMatch();
+        }
+    };
+    addChildComponent(vocalRangeOverlay.get());
+
 
 #if HOSI_PRO_EDITION
     // YouTube Karaoke Player Overlay (PRO Edition)
@@ -503,7 +540,7 @@ void MainComponent::showSongbook(bool show)
         }
     }
 
-    bool anyOverlayStillOpen = isSettingsOverlayVisible || isDonateOverlayVisible;
+    bool anyOverlayStillOpen = isSettingsOverlayVisible || isDonateOverlayVisible || isVocalRangeOverlayVisible;
 #if HOSI_PRO_EDITION
     anyOverlayStillOpen = anyOverlayStillOpen || isYouTubeOverlayVisible;
 #endif
@@ -517,6 +554,62 @@ void MainComponent::showSongbook(bool show)
 
     resized();
 }
+
+void MainComponent::showVocalRangeOverlay(bool show)
+{
+    if (show && isCompactMode)
+    {
+        wasInCompactModeBeforeOverlay = true;
+        toggleCompactMode();
+    }
+
+    isVocalRangeOverlayVisible = show;
+    if (vocalRangeOverlay != nullptr)
+    {
+        vocalRangeOverlay->setVisible(show);
+        if (show)
+        {
+            if (isSettingsOverlayVisible)
+            {
+                isSettingsOverlayVisible = false;
+                if (settingsOverlay != nullptr) settingsOverlay->setVisible(false);
+            }
+            if (isDonateOverlayVisible)
+            {
+                isDonateOverlayVisible = false;
+                if (donateOverlay != nullptr) donateOverlay->setVisible(false);
+            }
+            if (isSongbookOverlayVisible)
+            {
+                isSongbookOverlayVisible = false;
+                if (songbookOverlay != nullptr) songbookOverlay->setVisible(false);
+            }
+#if HOSI_PRO_EDITION
+            if (isYouTubeOverlayVisible)
+            {
+                isYouTubeOverlayVisible = false;
+                if (youtubeOverlay != nullptr) youtubeOverlay->setVisible(false);
+            }
+#endif
+            vocalRangeOverlay->toFront(true);
+        }
+    }
+
+    bool anyOverlayStillOpen = isSettingsOverlayVisible || isDonateOverlayVisible || isSongbookOverlayVisible;
+#if HOSI_PRO_EDITION
+    anyOverlayStillOpen = anyOverlayStillOpen || isYouTubeOverlayVisible;
+#endif
+
+    if (!show && wasInCompactModeBeforeOverlay && !anyOverlayStillOpen)
+    {
+        wasInCompactModeBeforeOverlay = false;
+        if (!isCompactMode)
+            toggleCompactMode();
+    }
+
+    resized();
+}
+
 
 #if HOSI_PRO_EDITION
 void MainComponent::showYouTubePlayer(bool show, const juce::String& initialSongName)
@@ -700,6 +793,10 @@ void MainComponent::resized()
     {
         songbookOverlay->setBounds(getLocalBounds());
     }
+    if (vocalRangeOverlay != nullptr && vocalRangeOverlay->isVisible())
+    {
+        vocalRangeOverlay->setBounds(getLocalBounds());
+    }
 #if HOSI_PRO_EDITION
     if (youtubeOverlay != nullptr && youtubeOverlay->isVisible())
     {
@@ -707,6 +804,7 @@ void MainComponent::resized()
     }
 #endif
 }
+
 
 void MainComponent::setRightTab(RightTab tab)
 {

@@ -1,10 +1,10 @@
 #include "SongbookOverlay.h"
 
-SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr)
-    : songbookManager(songbookMgr)
+SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr, VocalRangeDetector& detector)
+    : songbookManager(songbookMgr), vocalRangeDetector(detector)
 {
     // Title
-    titleLabel.setText(juce::String::fromUTF8(u8"🎵 SỔ TONE BÀI HÁT (SONGBOOK & AUTO-KEY)"), juce::dontSendNotification);
+    titleLabel.setText(juce::String::fromUTF8(u8"🎵 SỔ TONE BÀI HÁT & GỢI Ý AI (SMART SONGBOOK)"), juce::dontSendNotification);
     titleLabel.setFont(juce::FontOptions(18.0f, juce::Font::bold));
     titleLabel.setColour(juce::Label::textColourId, juce::Colour(0xff38bdf8));
     addAndMakeVisible(titleLabel);
@@ -29,6 +29,7 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr)
 
     // Genre Filter
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🌟 Tất Cả Bài Hát"), 1);
+    genreFilterCombo.addItem(juce::String::fromUTF8(u8"🎯 Gợi Ý Vừa Giọng AI"), 100);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"❤️ Bài Hát Yêu Thích"), 2);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🔥 Nhạc Trẻ / Pop"), 3);
     genreFilterCombo.addItem(juce::String::fromUTF8(u8"🎸 Bolero / Nhạc Vàng"), 4);
@@ -41,6 +42,15 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr)
     genreFilterCombo.setColour(juce::ComboBox::textColourId, juce::Colours::white);
     genreFilterCombo.setColour(juce::ComboBox::outlineColourId, juce::Colour(0xff475569));
     addAndMakeVisible(genreFilterCombo);
+
+    // AI Vocal Range Button
+    aiRangeButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0284c7)); // Sky Blue
+    aiRangeButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    aiRangeButton.onClick = [this]() {
+        if (onOpenVocalRangeDetector)
+            onOpenVocalRangeDetector();
+    };
+    addAndMakeVisible(aiRangeButton);
 
     // Top action buttons
     addSongButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff059669));
@@ -58,6 +68,7 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr)
         );
         fileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
             [this](const juce::FileChooser& fc) {
+
                 auto file = fc.getResult();
                 if (file.existsAsFile())
                 {
@@ -116,7 +127,25 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr)
     detailInfoLabel.setColour(juce::Label::textColourId, juce::Colour(0xffcbd5e1));
     addAndMakeVisible(detailInfoLabel);
 
+    // AI Match Banner
+    aiMatchBanner.setFont(juce::FontOptions(12.5f, juce::Font::bold));
+    aiMatchBanner.setColour(juce::Label::textColourId, juce::Colour(0xff34d399));
+    addAndMakeVisible(aiMatchBanner);
+
+    applyAiToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0d9488)); // Teal
+    applyAiToneButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    applyAiToneButton.onClick = [this]() {
+        if (selectedIndex >= 0 && selectedIndex < static_cast<int>(displayedFits.size()))
+        {
+            const auto& fit = displayedFits[static_cast<size_t>(selectedIndex)];
+            semitoneOffset = fit.recommendedShift;
+            applySelectedTone(fit.recommendedTone);
+        }
+    };
+    addAndMakeVisible(applyAiToneButton);
+
     // Tone Buttons
+
     maleToneButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1d4ed8));
     maleToneButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     maleToneButton.onClick = [this]() {
@@ -261,6 +290,12 @@ void SongbookOverlay::visibilityChanged()
     }
 }
 
+void SongbookOverlay::setFilterToAiMatch()
+{
+    genreFilterCombo.setSelectedId(100, juce::dontSendNotification);
+    refreshList();
+}
+
 void SongbookOverlay::refreshList()
 {
     juce::String query = searchEditor.getText();
@@ -274,7 +309,28 @@ void SongbookOverlay::refreshList()
     else if (filterId == 6) genreFilter = "TRU_TINH";
     else if (filterId == 7) genreFilter = "CUSTOM_USER";
 
-    displayedSongs = songbookManager.searchSongs(query, genreFilter);
+    const auto& prof = vocalRangeDetector.getProfile();
+    displayedSongs.clear();
+    displayedFits.clear();
+
+    if (filterId == 100) // AI Smart Match Filter
+    {
+        auto ranked = songbookManager.getAiRecommendedSongs(prof.lowestMidi, prof.highestMidi, query);
+        for (const auto& r : ranked)
+        {
+            displayedSongs.push_back(r.first);
+            displayedFits.push_back(r.second);
+        }
+    }
+    else
+    {
+        displayedSongs = songbookManager.searchSongs(query, genreFilter);
+        displayedFits.reserve(displayedSongs.size());
+        for (const auto& s : displayedSongs)
+        {
+            displayedFits.push_back(songbookManager.evaluateSongFit(s, prof.lowestMidi, prof.highestMidi));
+        }
+    }
 
     songListBox.updateContent();
     
@@ -355,31 +411,49 @@ void SongbookOverlay::paintListBoxItem(int rowNumber, juce::Graphics& g, int wid
 
     // Tone Badges
     int badgeRight = width - 10;
-    
-    // Custom Tone or Orig Tone
-    juce::String toneDisplay = item.getEffectiveTone();
     int badgeW = 52;
     int badgeH = 24;
     int badgeY = (height - badgeH) / 2;
 
-    // Female Tone Badge (Pink)
-    badgeRight -= badgeW;
-    g.setColour(juce::Colour(0x33db2777));
-    g.fillRoundedRectangle(static_cast<float>(badgeRight), static_cast<float>(badgeY), static_cast<float>(badgeW), static_cast<float>(badgeH), 3.0f);
-    g.setColour(juce::Colour(0xfff472b6));
-    g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
-    g.drawText(juce::String::fromUTF8(u8"Nữ: ") + item.keyFemale, badgeRight, badgeY, badgeW, badgeH, juce::Justification::centred, false);
+    int filterId = genreFilterCombo.getSelectedId();
+    if (filterId == 100 && rowNumber < static_cast<int>(displayedFits.size()))
+    {
+        // Show AI Match Badge on the right
+        const auto& fit = displayedFits[static_cast<size_t>(rowNumber)];
+        int aiBadgeW = 95;
+        badgeRight -= aiBadgeW;
 
-    // Male Tone Badge (Blue)
-    badgeRight -= (badgeW + 6);
-    g.setColour(juce::Colour(0x332563eb));
-    g.fillRoundedRectangle(static_cast<float>(badgeRight), static_cast<float>(badgeY), static_cast<float>(badgeW), static_cast<float>(badgeH), 3.0f);
-    g.setColour(juce::Colour(0xff60a5fa));
-    g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
-    g.drawText(juce::String::fromUTF8(u8"Nam: ") + item.keyMale, badgeRight, badgeY, badgeW, badgeH, juce::Justification::centred, false);
+        juce::Colour badgeCol = (fit.fitScore >= 95) ? juce::Colour(0x33059669) : juce::Colour(0x330284c7);
+        juce::Colour textCol = (fit.fitScore >= 95) ? juce::Colour(0xff34d399) : juce::Colour(0xff38bdf8);
+
+        g.setColour(badgeCol);
+        g.fillRoundedRectangle(static_cast<float>(badgeRight), static_cast<float>(badgeY), static_cast<float>(aiBadgeW), static_cast<float>(badgeH), 3.0f);
+        g.setColour(textCol);
+        g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+        g.drawText(fit.fitBadge, badgeRight, badgeY, aiBadgeW, badgeH, juce::Justification::centred, false);
+    }
+    else
+    {
+        // Female Tone Badge (Pink)
+        badgeRight -= badgeW;
+        g.setColour(juce::Colour(0x33db2777));
+        g.fillRoundedRectangle(static_cast<float>(badgeRight), static_cast<float>(badgeY), static_cast<float>(badgeW), static_cast<float>(badgeH), 3.0f);
+        g.setColour(juce::Colour(0xfff472b6));
+        g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+        g.drawText(juce::String::fromUTF8(u8"Nữ: ") + item.keyFemale, badgeRight, badgeY, badgeW, badgeH, juce::Justification::centred, false);
+
+        // Male Tone Badge (Blue)
+        badgeRight -= (badgeW + 6);
+        g.setColour(juce::Colour(0x332563eb));
+        g.fillRoundedRectangle(static_cast<float>(badgeRight), static_cast<float>(badgeY), static_cast<float>(badgeW), static_cast<float>(badgeH), 3.0f);
+        g.setColour(juce::Colour(0xff60a5fa));
+        g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+        g.drawText(juce::String::fromUTF8(u8"Nam: ") + item.keyMale, badgeRight, badgeY, badgeW, badgeH, juce::Justification::centred, false);
+    }
 
     // Main Tone Badge (Green or Gold if Custom)
     badgeRight -= (badgeW + 6);
+    juce::String toneDisplay = item.getEffectiveTone();
     bool hasCustom = item.customKey.isNotEmpty();
     g.setColour(hasCustom ? juce::Colour(0x33d97706) : juce::Colour(0x33059669));
     g.fillRoundedRectangle(static_cast<float>(badgeRight), static_cast<float>(badgeY), static_cast<float>(badgeW), static_cast<float>(badgeH), 3.0f);
@@ -442,6 +516,8 @@ void SongbookOverlay::updateDetailPanel()
         detailTitleLabel.setText(juce::String::fromUTF8(u8"Không tìm thấy bài hát phù hợp"), juce::dontSendNotification);
         detailArtistLabel.setText("", juce::dontSendNotification);
         detailInfoLabel.setText("", juce::dontSendNotification);
+        aiMatchBanner.setVisible(false);
+        applyAiToneButton.setVisible(false);
         maleToneButton.setVisible(false);
         femaleToneButton.setVisible(false);
         origToneButton.setVisible(false);
@@ -463,6 +539,22 @@ void SongbookOverlay::updateDetailPanel()
     if (song.customKey.isNotEmpty())
         info += juce::String::fromUTF8(u8"   |   ⭐ Tone riêng: ") + song.customKey;
     detailInfoLabel.setText(info, juce::dontSendNotification);
+
+    // AI Fit info
+    if (selectedIndex < static_cast<int>(displayedFits.size()))
+    {
+        const auto& fit = displayedFits[static_cast<size_t>(selectedIndex)];
+        aiMatchBanner.setVisible(true);
+        aiMatchBanner.setText(juce::String::fromUTF8(u8"✨ AI Match: ") + fit.fitBadge + " • " + fit.advice, juce::dontSendNotification);
+        
+        applyAiToneButton.setVisible(true);
+        applyAiToneButton.setButtonText(juce::String::fromUTF8(u8"✨ DÙNG TONE AI GỢI Ý [") + fit.recommendedTone + "]");
+    }
+    else
+    {
+        aiMatchBanner.setVisible(false);
+        applyAiToneButton.setVisible(false);
+    }
 
     maleToneButton.setVisible(true);
     maleToneButton.setButtonText(juce::String::fromUTF8(u8"👨 TONE NAM: ") + song.keyMale);
@@ -503,6 +595,7 @@ void SongbookOverlay::updateDetailPanel()
 
     deleteSongButton.setVisible(song.isCustom);
 }
+
 
 void SongbookOverlay::applySelectedTone(const juce::String& toneStr)
 {
@@ -627,38 +720,53 @@ void SongbookOverlay::resized()
     // Top Header
     auto headerArea = bounds.removeFromTop(44);
     closeButton.setBounds(headerArea.removeFromRight(36).reduced(4, 4));
-    titleLabel.setBounds(headerArea.removeFromLeft(500).reduced(10, 4));
+    titleLabel.setBounds(headerArea.removeFromLeft(520).reduced(10, 4));
 
     // Filter Bar
     auto filterBar = bounds.removeFromTop(38).reduced(12, 0);
-    searchEditor.setBounds(filterBar.removeFromLeft(360));
-    filterBar.removeFromLeft(10);
-    genreFilterCombo.setBounds(filterBar.removeFromLeft(180));
-    filterBar.removeFromLeft(10);
-    addSongButton.setBounds(filterBar.removeFromLeft(110));
+    searchEditor.setBounds(filterBar.removeFromLeft(280));
     filterBar.removeFromLeft(8);
-    importButton.setBounds(filterBar.removeFromLeft(105));
+    genreFilterCombo.setBounds(filterBar.removeFromLeft(165));
     filterBar.removeFromLeft(8);
-    exportButton.setBounds(filterBar.removeFromLeft(105));
+    aiRangeButton.setBounds(filterBar.removeFromLeft(130));
+    filterBar.removeFromLeft(8);
+    addSongButton.setBounds(filterBar.removeFromLeft(95));
+    filterBar.removeFromLeft(6);
+    importButton.setBounds(filterBar.removeFromLeft(70));
+    filterBar.removeFromLeft(6);
+    exportButton.setBounds(filterBar.removeFromLeft(70));
 
     bounds.removeFromTop(10);
 
     // Left ListBox vs Right Detail
-    int listWidth = static_cast<int>(bounds.getWidth() * 0.56f);
+    int listWidth = static_cast<int>(bounds.getWidth() * 0.55f);
     auto listArea = bounds.removeFromLeft(listWidth).reduced(12, 10);
     songListBox.setBounds(listArea);
 
     bounds.removeFromLeft(16);
-    auto detailArea = bounds.reduced(16, 14);
+    auto detailArea = bounds.reduced(16, 12);
 
     // Detail Components
-    detailTitleLabel.setBounds(detailArea.removeFromTop(32));
-    detailArtistLabel.setBounds(detailArea.removeFromTop(24));
-    detailInfoLabel.setBounds(detailArea.removeFromTop(24));
-    detailArea.removeFromTop(20);
+    detailTitleLabel.setBounds(detailArea.removeFromTop(30));
+    detailArtistLabel.setBounds(detailArea.removeFromTop(22));
+    detailInfoLabel.setBounds(detailArea.removeFromTop(22));
+    detailArea.removeFromTop(6);
+
+    // AI Match Banner & Quick Apply
+    if (aiMatchBanner.isVisible())
+    {
+        aiMatchBanner.setBounds(detailArea.removeFromTop(24));
+        detailArea.removeFromTop(4);
+        applyAiToneButton.setBounds(detailArea.removeFromTop(32));
+        detailArea.removeFromTop(10);
+    }
+    else
+    {
+        detailArea.removeFromTop(10);
+    }
 
     // Quick Tone Buttons Row
-    auto toneButtonsRow = detailArea.removeFromTop(38);
+    auto toneButtonsRow = detailArea.removeFromTop(36);
     int btnW = (toneButtonsRow.getWidth() - 16) / 3;
     maleToneButton.setBounds(toneButtonsRow.removeFromLeft(btnW));
     toneButtonsRow.removeFromLeft(8);
@@ -666,32 +774,32 @@ void SongbookOverlay::resized()
     toneButtonsRow.removeFromLeft(8);
     origToneButton.setBounds(toneButtonsRow.removeFromLeft(btnW));
 
-    detailArea.removeFromTop(16);
+    detailArea.removeFromTop(12);
 
     // Transpose row
-    auto transposeRow = detailArea.removeFromTop(34);
-    transposeDownBtn.setBounds(transposeRow.removeFromLeft(60));
-    transposeUpBtn.setBounds(transposeRow.removeFromRight(60));
+    auto transposeRow = detailArea.removeFromTop(32);
+    transposeDownBtn.setBounds(transposeRow.removeFromLeft(56));
+    transposeUpBtn.setBounds(transposeRow.removeFromRight(56));
     transposeDisplayLabel.setBounds(transposeRow);
 
-    detailArea.removeFromTop(20);
+    detailArea.removeFromTop(14);
 
     // Big Action Button
-    applyAutoTuneButton.setBounds(detailArea.removeFromTop(40));
+    applyAutoTuneButton.setBounds(detailArea.removeFromTop(38));
     detailArea.removeFromTop(8);
 #if HOSI_PRO_EDITION
-    openYouTubeBeatButton.setBounds(detailArea.removeFromTop(36));
-    detailArea.removeFromTop(10);
+    openYouTubeBeatButton.setBounds(detailArea.removeFromTop(34));
+    detailArea.removeFromTop(8);
 #endif
 
     // Save Custom Tone & Favorite Row
-    auto actionRow = detailArea.removeFromTop(34);
+    auto actionRow = detailArea.removeFromTop(32);
     int halfW = (actionRow.getWidth() - 8) / 2;
     saveCustomToneButton.setBounds(actionRow.removeFromLeft(halfW));
     favoriteButton.setBounds(actionRow.removeFromRight(halfW));
-    detailArea.removeFromTop(10);
+    detailArea.removeFromTop(8);
 
-    deleteSongButton.setBounds(detailArea.removeFromTop(30).removeFromRight(120));
+    deleteSongButton.setBounds(detailArea.removeFromTop(28).removeFromRight(120));
 
     // Toast positioning if visible
     if (toastComponent.isVisible())
@@ -702,3 +810,4 @@ void SongbookOverlay::resized()
         toastComponent.toFront(true);
     }
 }
+
