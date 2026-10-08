@@ -1,8 +1,8 @@
-name: "Build macOS Universal Binary"
+name: "Build macOS Universal Binary (Free & PRO)"
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, source-main ]
   workflow_dispatch:
 
 jobs:
@@ -22,30 +22,14 @@ jobs:
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
 
-      - name: "Build Standalone App and OBS Plugins (VST3 & AU)"
+      - name: "Build Standalone Apps (Free & PRO) and OBS Plugins (VST3 & AU)"
         run: |
-          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamOBSReceiver_VST3 LiveStreamOBSReceiver_AU -j 4
+          cmake --build build_mac --config Release --target LiveStreamMicroDAW LiveStreamMicroDAW_PRO LiveStreamOBSReceiver_VST3 LiveStreamOBSReceiver_AU -j 4
 
-      - name: "Package macOS Release Bundle"
+      - name: "Package Free & PRO macOS Release Bundles"
         run: |
-          RELEASE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
-          mkdir -p "${RELEASE_DIR}/Plugins"
-
-          echo "=== 1. SEARCHING AND COPYING STANDALONE APP ==="
-          find build_mac -name "LiveStream Micro-DAW.app" -type d -exec cp -R {} "${RELEASE_DIR}/" \;
-
-          echo "=== 2. SEARCHING AND COPYING PLUGINS ==="
-          find build_mac -name "*.vst3" -type d -exec cp -R {} "${RELEASE_DIR}/Plugins/" \;
-          find build_mac -name "*.component" -type d -exec cp -R {} "${RELEASE_DIR}/Plugins/" \;
-
-          echo "=== 3. COPYING DOCUMENTATION ==="
-          cp "README.md" "${RELEASE_DIR}/"
-          cp "README_EN.md" "${RELEASE_DIR}/"
-          cp "HUONG_DAN_SU_DUNG.txt" "${RELEASE_DIR}/"
-
-          echo "=== 4. CREATING 1-CLICK INSTALLER COMMAND SCRIPT ==="
-          cat << 'EOF' > "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
-          #!/bin/bash
+          # Common script template for OBS plugin installation
+          INSTALL_SCRIPT='#!/bin/bash
           DIR="$(cd "$(dirname "$0")" && pwd)"
           echo "========================================================"
           echo " CÀI ĐẶT PLUGIN LIVESTREAM OBS RECEIVER CHO MACOS"
@@ -66,21 +50,48 @@ jobs:
           echo ""
           echo "=== HOÀN TẤT CÀI ĐẶT PLUGIN CHO OBS MAC ==="
           echo "Bây giờ bạn có thể mở OBS Studio và thêm bộ lọc VST3/Audio Unit!"
-          EOF
-          chmod +x "${RELEASE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+          '
 
-          echo "=== 5. VERIFYING PACKAGE CONTENTS ==="
-          ls -la "${RELEASE_DIR}"
-          ls -la "${RELEASE_DIR}/Plugins"
+          echo "=== 1. PACKAGING PRO EDITION ==="
+          PRO_DIR="dist_macos/LiveStream Micro-DAW PRO (macOS)"
+          mkdir -p "${PRO_DIR}/Plugins"
+          find build_mac -name "LiveStream Micro-DAW PRO.app" -type d -exec cp -R {} "${PRO_DIR}/" \;
+          find build_mac -name "*.vst3" -type d -exec cp -R {} "${PRO_DIR}/Plugins/" \;
+          find build_mac -name "*.component" -type d -exec cp -R {} "${PRO_DIR}/Plugins/" \;
+          cp "README.md" "${PRO_DIR}/"
+          cp "README_EN.md" "${PRO_DIR}/"
+          cp "HUONG_DAN_SU_DUNG.txt" "${PRO_DIR}/"
+          printf "%s\n" "$INSTALL_SCRIPT" > "${PRO_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+          chmod +x "${PRO_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
 
-          echo "=== 6. COMPRESSING ZIP ARCHIVE ==="
+          echo "=== 2. PACKAGING FREE EDITION ==="
+          FREE_DIR="dist_macos/LiveStream Micro-DAW (macOS)"
+          mkdir -p "${FREE_DIR}/Plugins"
+          find build_mac -name "LiveStream Micro-DAW.app" -type d -exec cp -R {} "${FREE_DIR}/" \;
+          find build_mac -name "*.vst3" -type d -exec cp -R {} "${FREE_DIR}/Plugins/" \;
+          find build_mac -name "*.component" -type d -exec cp -R {} "${FREE_DIR}/Plugins/" \;
+          cp "README.md" "${FREE_DIR}/"
+          cp "README_EN.md" "${FREE_DIR}/"
+          cp "HUONG_DAN_SU_DUNG.txt" "${FREE_DIR}/"
+          printf "%s\n" "$INSTALL_SCRIPT" > "${FREE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+          chmod +x "${FREE_DIR}/Cai_Dat_Plugin_OBS_Mac.command"
+
+          echo "=== 3. COMPRESSING ZIP ARCHIVES ==="
           cd dist_macos
-          zip -r -y "LiveStream_Micro_DAW_macOS.zip" "LiveStream Micro-DAW (macOS)"
+          zip -r -y "LiveStream_Micro_DAW_PRO_macOS.zip" "LiveStream Micro-DAW PRO (macOS)"
+          zip -r -y "LiveStream_Micro_DAW_Free_macOS.zip" "LiveStream Micro-DAW (macOS)"
           cd ..
 
-      - name: "Upload macOS Release Artifact"
+      - name: "Upload PRO Edition macOS Artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: LiveStream_Micro_DAW_macOS
-          path: dist_macos/LiveStream_Micro_DAW_macOS.zip
+          name: LiveStream_Micro_DAW_PRO_macOS
+          path: dist_macos/LiveStream_Micro_DAW_PRO_macOS.zip
+          retention-days: 30
+
+      - name: "Upload Free Edition macOS Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiveStream_Micro_DAW_Free_macOS
+          path: dist_macos/LiveStream_Micro_DAW_Free_macOS.zip
           retention-days: 30
