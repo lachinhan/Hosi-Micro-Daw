@@ -25,10 +25,14 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
     presetComboBox.addItem(juce::String::fromUTF8(u8"🎤 3. Karaoke Hall Echo"), 3);
     presetComboBox.addItem(juce::String::fromUTF8(u8"🎧 4. Podcast Clean Vocal"), 4);
     presetComboBox.addSeparator();
+#if HOSI_PRO_EDITION
     presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Chu Bin (Dance / Trap)"), 7);
     presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Lệ Quyên (Bolero Trữ Tình)"), 8);
     presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Đạt G / Vũ (Indie Acoustic)"), 9);
     presetComboBox.addItem(juce::String::fromUTF8(u8"☁️ Vinahouse Party Live"), 10);
+#else
+    presetComboBox.addItem(juce::String::fromUTF8(u8"🔒 Preset Ca Sĩ Cloud (PRO)"), 7);
+#endif
     presetComboBox.addSeparator();
     presetComboBox.addItem(juce::String::fromUTF8(u8"⚡ Tắt DSP (Bypass All)"), 5);
     presetComboBox.addItem(juce::String::fromUTF8(u8"🔄 Khôi Phục Mặc Định (Reset)"), 6);
@@ -39,6 +43,19 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         if (dspProcessor != nullptr)
         {
             int id = presetComboBox.getSelectedId();
+#if !HOSI_PRO_EDITION
+            if (id >= 7 && id <= 10)
+            {
+                juce::AlertWindow::showMessageBoxAsync(
+                    juce::AlertWindow::InfoIcon,
+                    juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+                    juce::String::fromUTF8(u8"Thư viện Preset Ca Sĩ & Streamer Cloud độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để sử dụng trọn bộ Preset phòng thu."),
+                    juce::String::fromUTF8(u8"Đã Hiểu")
+                );
+                presetComboBox.setSelectedId(1, juce::dontSendNotification);
+                return;
+            }
+#endif
             if (id == 6)
             {
                 dspProcessor->resetToFactoryDefaults();
@@ -111,6 +128,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
 
     // --- 1. AI Noise & Room De-Reverb Shield ---
     setupModuleHeader(aiPwrButton, aiTitleLabel, juce::String::fromUTF8(u8"1. 🛡️ AI NOISE & DE-REVERB"));
+#if HOSI_PRO_EDITION
     aiPwrButton.onClick = [this] {
         if (dspProcessor != nullptr) {
             const bool nextState = !dspProcessor->isAiDenoiseEnabled();
@@ -137,6 +155,23 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         }
     };
     contentContainer->addAndMakeVisible(aiDeReverbToggle);
+#else
+    aiPwrButton.onClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Bộ lọc AI Noise & Room De-Reverb Shield độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để khử ồn sạch sẽ mà không làm méo tiếng giọng hát."),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+    aiDenoiseToggle.setButtonText(juce::String::fromUTF8(u8"🔒 AI DENOISE (PRO)"));
+    aiDenoiseToggle.onClick = aiPwrButton.onClick;
+    contentContainer->addAndMakeVisible(aiDenoiseToggle);
+
+    aiDeReverbToggle.setButtonText(juce::String::fromUTF8(u8"🔒 DE-REVERB (PRO)"));
+    aiDeReverbToggle.onClick = aiPwrButton.onClick;
+    contentContainer->addAndMakeVisible(aiDeReverbToggle);
+#endif
 
     setupSlider(aiDenoiseSlider, aiDenoiseLabel, "AI Denoise", 0.0, 100.0, 1.0, 75.0, "%");
     aiDenoiseSlider.onValueChange = [this] {
@@ -175,11 +210,26 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         }
     };
 
+#if HOSI_PRO_EDITION
     aiAutoEqButton.setButtonText(juce::String::fromUTF8(u8"✨ AI AUTO-EQ"));
     aiAutoEqButton.setTooltip(juce::String::fromUTF8(u8"Phân tích chất giọng AI & Tự động cân chỉnh đường cong EQ 1-Click"));
     aiAutoEqButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff7c3aed)); // Purple Violet
     aiAutoEqButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     aiAutoEqButton.onClick = [this] { showAiVocalProfilerOverlay(); };
+#else
+    aiAutoEqButton.setButtonText(juce::String::fromUTF8(u8"🔒 AI AUTO-EQ (PRO)"));
+    aiAutoEqButton.setTooltip(juce::String::fromUTF8(u8"Tính năng AI Vocal Profiler & Smart Auto-EQ độc quyền trên bản PRO"));
+    aiAutoEqButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    aiAutoEqButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff59e0b));
+    aiAutoEqButton.onClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Tính năng AI Vocal Profiler & Auto EQ tự động căn chỉnh giọng chỉ có trên bản PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để tự động quét chất giọng và tối ưu EQ 1-click."),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     contentContainer->addAndMakeVisible(aiAutoEqButton);
 
     setupSlider(eqLowSlider, eqLowLabel, "Low (120Hz)", -12.0, 12.0, 0.5, 0.0, " dB");
@@ -225,6 +275,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         }
     };
 
+#if HOSI_PRO_EDITION
     reverbSyncToggle.setTooltip(juce::String::fromUTF8(u8"Tự động tính toán đuôi vang (Decay) khép lại chuẩn xác cuối ô nhịp theo Tempo bài hát, giúp giọng bay bổng mà không bao giờ đè mờ câu hát tiếp theo"));
     reverbSyncToggle.onClick = [this] {
         if (dspProcessor != nullptr) {
@@ -232,6 +283,17 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
             updateAllUI();
         }
     };
+#else
+    reverbSyncToggle.setButtonText(juce::String::fromUTF8(u8"🔒 AUTO-TAIL (PRO)"));
+    reverbSyncToggle.onClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Tính năng Reverb Auto-Tail tự động khép đuôi theo nhịp độc quyền trên LiveStream Micro-DAW PRO v3.0!"),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     contentContainer->addAndMakeVisible(reverbSyncToggle);
 
     reverbBarCombo.addItem(juce::String::fromUTF8(u8"1/2 Bar (Fast Rap / EDM)"), 1);
@@ -278,6 +340,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         }
     };
 
+#if HOSI_PRO_EDITION
     delaySyncToggle.setTooltip(juce::String::fromUTF8(u8"Khóa thời gian nhại Delay chính xác theo phân đoạn phách Tempo bài hát (1/4, 1/8Dotted, 1/8, 1/8Triplet) giúp tiếng nhại nảy tanh tách đúng nhịp trống"));
     delaySyncToggle.onClick = [this] {
         if (dspProcessor != nullptr) {
@@ -285,6 +348,17 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
             updateAllUI();
         }
     };
+#else
+    delaySyncToggle.setButtonText(juce::String::fromUTF8(u8"🔒 BPM SYNC (PRO)"));
+    delaySyncToggle.onClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Tính năng Delay BPM Sync theo phân đoạn phách nhịp độc quyền trên LiveStream Micro-DAW PRO v3.0!"),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     contentContainer->addAndMakeVisible(delaySyncToggle);
 
     delaySubdivisionCombo.addItem(juce::String::fromUTF8(u8"1/4 Note (500ms @ 120)"), 1);

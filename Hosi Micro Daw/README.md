@@ -48,6 +48,11 @@ Một hệ thống **Micro-DAW chuyên dụng cho Livestream & Hát Live** siêu
    - **Lên/Hạ Tone Auto-Tune Khi Nhạc Chuyển Tone (`MOD MIC: [-1] [0] [+1] [+2]`)**: Khi bài hát lên tone ở điệp khúc, bấm phím tắt để nâng Tone Auto-Tune khớp nốt mới, **giữ nguyên 100% beat YouTube không bị méo tiếng**.
    - **Song Ca Nam - Nữ Tức Thời (`[♂ NAM]` / `[♀ NỮ]`)**: Đổi Tone Auto-Tune tức thì (độ trễ 0ms) khi đến lượt Nam hoặc Nữ hát.
 
+6. **☁️ Cloud Songbook & Artist Preset Cloud (Kho Bài Hát & Cấu Hình Ca Sĩ Online)**:
+   - **Tự động đồng bộ bài hát Hot Trend (`☁️ Đồng Bộ Cloud`)**: Nạp bài hát mới từ bảng xếp hạng TikTok/YouTube về Sổ Tone qua kết nối HTTPS bất đồng bộ chạy ngầm (Non-blocking) mà không ghi đè bài tự thêm hoặc bài yêu thích `❤️`.
+   - **Thư viện Preset Ca Sĩ / Streamer Chuẩn Studio**: 1-Click nạp cấu hình giọng hát của các phong cách hàng đầu (*Chu Bin Dance/Trap, Lệ Quyên Bolero, Đạt G Acoustic, Streamer Radio Talkshow, Vinahouse Party Live*).
+   - **Công cụ tự động hóa `tools/sync_cloud_data.py`**: Tự động hóa cập nhật, chuẩn hóa và kiểm tra dữ liệu Cloud.
+
 ---
 
 ### 🎛️ CÁC TÍNH NĂNG NỀN TẢNG STUDIO & LIVESTREAM

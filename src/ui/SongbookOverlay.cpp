@@ -45,15 +45,30 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr, VocalRangeDetecto
     addAndMakeVisible(genreFilterCombo);
 
     // AI Vocal Range Button
+#if HOSI_PRO_EDITION
     aiRangeButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff0284c7)); // Sky Blue
     aiRangeButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     aiRangeButton.onClick = [this]() {
         if (onOpenVocalRangeDetector)
             onOpenVocalRangeDetector();
     };
+#else
+    aiRangeButton.setButtonText(juce::String::fromUTF8(u8"🔒 Đo Âm Vực AI (PRO)"));
+    aiRangeButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    aiRangeButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff59e0b));
+    aiRangeButton.onClick = [this]() {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Tính năng AI Đo Âm Vực & Đề Xuất Bài Hát độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để trải nghiệm trọn bộ công nghệ AI Vocal Studio."),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     addAndMakeVisible(aiRangeButton);
 
     // Cloud Sync Button
+#if HOSI_PRO_EDITION
     syncCloudButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff4338ca)); // Indigo Cloud
     syncCloudButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     syncCloudButton.onClick = [this]() {
@@ -68,6 +83,19 @@ SongbookOverlay::SongbookOverlay(SongbookManager& songbookMgr, VocalRangeDetecto
             showToast(statusMsg);
         });
     };
+#else
+    syncCloudButton.setButtonText(juce::String::fromUTF8(u8"🔒 Cloud Sync (PRO)"));
+    syncCloudButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    syncCloudButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff94a3b8));
+    syncCloudButton.onClick = [this]() {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Tính năng Đồng bộ bài hát Hot Trend từ Cloud độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nBản Free được cung cấp sẵn 1.033+ bài hát Offline tiêu chuẩn."),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     addAndMakeVisible(syncCloudButton);
 
     // Top action buttons
