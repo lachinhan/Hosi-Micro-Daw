@@ -1,22 +1,29 @@
 # ==============================================================================
-# Git Ignore for LiveStream Micro-DAW (Private Source Repository)
+# Git Ignore for LiveStream Micro-DAW (Public Release Distribution)
 # ==============================================================================
+
+# Source code & development files (strictly kept in private repository)
+src/
+plugins/
+third_party/
+cloud/
+tools/
+installer/
+.github/
+CMakeLists.txt
+KE_HOACH_*.md
+build_*.bat
+Push_To_GitHub.bat
 
 # Build directories and outputs
 build/
 build_mac/
 dist_macos/
 installer_output/
-third_party/webview2/
+Hosi Micro Daw/
+Hosi Micro Daw Setup/
 
-# Local PRO distribution folders & binaries
-*PRO*Portable.*
-*PRO*Setup.*
-Hosi Micro Daw PRO/
-Hosi Micro Daw PRO Setup/
-LiveStream Micro-DAW PRO.exe
-LiveStream_Micro_DAW_PRO_Setup.exe
+# PRO Distribution (Private)
+*PRO*
 WebView2Loader.dll
 *.WebView2/
-
-
