@@ -15,6 +15,7 @@ void BuiltInDspAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
 
     // AI Noise Suppressor & Room De-Reverb Prepare
     aiNoiseSuppressor.prepare(currentSampleRate, samplesPerBlock);
+    aiVocalProfiler.prepare(currentSampleRate, samplesPerBlock);
 
     // Pre-allocate temp reverb buffer to eliminate heap allocation on audio thread
     tempReverbBuffer.setSize(2, std::max(samplesPerBlock, 2048));
@@ -132,6 +133,12 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     const bool hasDelay = delayEnabled.load(std::memory_order_relaxed);
     const bool hasReverb = reverbEnabled.load(std::memory_order_relaxed);
     const bool hasLimiter = limiterEnabled.load(std::memory_order_relaxed);
+
+    // AI Vocal Profiler Input Feed (If actively recording sample)
+    if (aiVocalProfiler.isProfiling())
+    {
+        aiVocalProfiler.processBlock(buffer);
+    }
 
     // If completely bypassed, return immediately with 0 overhead
     if (!hasAi && !hasGate && !hasEq && !hasComp && !hasDelay && !hasReverb && !hasLimiter)
@@ -621,4 +628,14 @@ void BuiltInDspAudioProcessor::setStateInformation(const void* data, int sizeInB
         currentPreset.store(static_cast<VocalPreset>(xml->getIntAttribute("preset", 0)), std::memory_order_release);
         sendChangeMessage();
     }
+}
+
+void BuiltInDspAudioProcessor::applyVocalProfileEq(AiVocalProfiler::ProfileStyle style)
+{
+    auto gains = aiVocalProfiler.getGainsForStyle(style);
+    setEqEnabled(true);
+    setEqLowGainDb(gains.lowGainDb);
+    setEqMidGainDb(gains.midGainDb);
+    setEqHighGainDb(gains.highGainDb);
+    sendChangeMessage();
 }

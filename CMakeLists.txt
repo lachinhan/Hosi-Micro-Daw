@@ -114,6 +114,10 @@ set(COMMON_DAW_SOURCES
     src/ui/SoundboardComponent.h
     src/audio/AiNoiseSuppressor.cpp
     src/audio/AiNoiseSuppressor.h
+    src/audio/AiVocalProfiler.cpp
+    src/audio/AiVocalProfiler.h
+    src/ui/AiVocalProfilerOverlay.cpp
+    src/ui/AiVocalProfilerOverlay.h
     src/audio/BuiltInDspAudioProcessor.cpp
     src/audio/BuiltInDspAudioProcessor.h
     src/ui/BuiltInDspComponent.cpp

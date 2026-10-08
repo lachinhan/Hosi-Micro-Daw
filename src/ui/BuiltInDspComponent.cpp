@@ -168,6 +168,13 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
             updateAllUI();
         }
     };
+
+    aiAutoEqButton.setTooltip(juce::String::fromUTF8(u8"Phân tích chất giọng AI & Tự động cân chỉnh đường cong EQ 1-Click"));
+    aiAutoEqButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff7c3aed)); // Purple Violet
+    aiAutoEqButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    aiAutoEqButton.onClick = [this] { showAiVocalProfilerOverlay(); };
+    contentContainer->addAndMakeVisible(aiAutoEqButton);
+
     setupSlider(eqLowSlider, eqLowLabel, "Low (120Hz)", -12.0, 12.0, 0.5, 0.0, " dB");
     eqLowSlider.onValueChange = [this] {
         if (dspProcessor != nullptr) dspProcessor->setEqLowGainDb(static_cast<float>(eqLowSlider.getValue()));
@@ -586,6 +593,9 @@ void BuiltInDspComponent::resized()
 
     // 3. EQ
     layoutModule(eqPwrButton, eqTitleLabel, [&] {
+        aiAutoEqButton.setBounds(6, y, contentW - 12, 22);
+        y += 26;
+
         eqLowLabel.setBounds(8, y, 90, 14);
         eqLowSlider.setBounds(6, y + 14, contentW - 12, 18);
         y += 34;
@@ -680,4 +690,23 @@ void BuiltInDspComponent::resized()
     });
 
     contentContainer->setSize(contentW, y + 12);
+
+    if (profilerOverlay != nullptr)
+    {
+        profilerOverlay->setBounds(getLocalBounds());
+    }
+}
+
+void BuiltInDspComponent::showAiVocalProfilerOverlay()
+{
+    if (dspProcessor == nullptr) return;
+
+    profilerOverlay = std::make_unique<AiVocalProfilerOverlay>(*dspProcessor);
+    profilerOverlay->onClose = [this] {
+        profilerOverlay.reset();
+        updateAllUI();
+        repaint();
+    };
+    addAndMakeVisible(*profilerOverlay);
+    profilerOverlay->setBounds(getLocalBounds());
 }

@@ -6,6 +6,7 @@
 #include <vector>
 #include "TempoSyncEngine.h"
 #include "AiNoiseSuppressor.h"
+#include "AiVocalProfiler.h"
 
 class BuiltInDspAudioProcessor : public juce::AudioProcessor, public juce::ChangeBroadcaster
 {
@@ -51,6 +52,15 @@ public:
     float getAiNoiseReductionDb() const noexcept { return aiNoiseSuppressor.getNoiseReductionDb(); }
     float getAiVoiceProbability() const noexcept { return aiNoiseSuppressor.getVoiceProbability(); }
 
+    // --- AI Vocal Profiler & Smart Auto-EQ ---
+    AiVocalProfiler& getAiVocalProfiler() noexcept { return aiVocalProfiler; }
+    void startVocalProfiling() { aiVocalProfiler.startProfiling(); }
+    void cancelVocalProfiling() { aiVocalProfiler.cancelProfiling(); }
+    bool isVocalProfiling() const noexcept { return aiVocalProfiler.isProfiling(); }
+    float getVocalProfilingProgress() const noexcept { return aiVocalProfiler.getProgress(); }
+    const AiVocalProfiler::ProfileResult& getVocalProfileResult() const noexcept { return aiVocalProfiler.getLastResult(); }
+    void applyVocalProfileEq(AiVocalProfiler::ProfileStyle style);
+
     // --- 2. Noise Gate Controls ---
     void setGateEnabled(bool enabled) noexcept
     {
@@ -68,13 +78,13 @@ public:
     bool isGateOpen() const noexcept { return gateIsOpen.load(std::memory_order_relaxed); }
 
     // --- 3-Band Studio EQ Controls ---
-    void setEqEnabled(bool enabled) noexcept { eqEnabled.store(enabled, std::memory_order_release); }
+    void setEqEnabled(bool enabled) noexcept { eqEnabled.store(enabled, std::memory_order_release); sendChangeMessage(); }
     bool isEqEnabled() const noexcept { return eqEnabled.load(std::memory_order_relaxed); }
-    void setEqLowGainDb(float gainDb) noexcept { eqLowGainDb.store(gainDb, std::memory_order_release); needEqUpdate.store(true, std::memory_order_release); }
+    void setEqLowGainDb(float gainDb) noexcept { eqLowGainDb.store(gainDb, std::memory_order_release); needEqUpdate.store(true, std::memory_order_release); sendChangeMessage(); }
     float getEqLowGainDb() const noexcept { return eqLowGainDb.load(std::memory_order_relaxed); }
-    void setEqMidGainDb(float gainDb) noexcept { eqMidGainDb.store(gainDb, std::memory_order_release); needEqUpdate.store(true, std::memory_order_release); }
+    void setEqMidGainDb(float gainDb) noexcept { eqMidGainDb.store(gainDb, std::memory_order_release); needEqUpdate.store(true, std::memory_order_release); sendChangeMessage(); }
     float getEqMidGainDb() const noexcept { return eqMidGainDb.load(std::memory_order_relaxed); }
-    void setEqHighGainDb(float gainDb) noexcept { eqHighGainDb.store(gainDb, std::memory_order_release); needEqUpdate.store(true, std::memory_order_release); }
+    void setEqHighGainDb(float gainDb) noexcept { eqHighGainDb.store(gainDb, std::memory_order_release); needEqUpdate.store(true, std::memory_order_release); sendChangeMessage(); }
     float getEqHighGainDb() const noexcept { return eqHighGainDb.load(std::memory_order_relaxed); }
 
     // --- Warm Compressor Controls ---
@@ -232,6 +242,7 @@ private:
 
     // --- AI Noise Suppressor & Room De-Reverb ---
     AiNoiseSuppressor aiNoiseSuppressor;
+    AiVocalProfiler aiVocalProfiler;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BuiltInDspAudioProcessor)
 };

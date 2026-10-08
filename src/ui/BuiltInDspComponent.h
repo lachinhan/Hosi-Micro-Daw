@@ -4,6 +4,7 @@
 #include "../audio/BuiltInDspAudioProcessor.h"
 #include "../audio/GraphManager.h"
 #include "../audio/TempoSyncEngine.h"
+#include "AiVocalProfilerOverlay.h"
 
 class BuiltInDspComponent : public juce::Component, public juce::Timer, public juce::ChangeListener
 {
@@ -17,6 +18,7 @@ public:
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
     void updateAllUI();
+    void showAiVocalProfilerOverlay();
 
 private:
     GraphManager& graphManager;
@@ -25,6 +27,7 @@ private:
     // Viewport to allow smooth scrolling if window is resized vertically
     juce::Viewport viewport;
     std::unique_ptr<juce::Component> contentContainer;
+    std::unique_ptr<AiVocalProfilerOverlay> profilerOverlay;
 
     // Header & Presets
     juce::Label headerTitleLabel;
@@ -59,6 +62,7 @@ private:
     // --- 3. Studio EQ Module ---
     juce::TextButton eqPwrButton{ "PWR" };
     juce::Label eqTitleLabel;
+    juce::TextButton aiAutoEqButton{ "✨ AI AUTO-EQ" };
     juce::Slider eqLowSlider, eqMidSlider, eqHighSlider;
     juce::Label eqLowLabel, eqMidLabel, eqHighLabel;
 
