@@ -383,7 +383,7 @@ void BuiltInDspComponent::updateAllUI()
     {
         reverbBarCombo.setSelectedId(static_cast<int>(dspProcessor->getReverbBarLength()) + 1, juce::dontSendNotification);
         float decaySec = TempoSyncEngine::calculateReverbDecaySec(currentBpm, dspProcessor->getReverbBarLength());
-        reverbDecayInfoLabel.setText(juce::String::formatted(u8"⏱️ Đuôi: %.2fs (%s)", decaySec, (const char*)TempoSyncEngine::getBarLengthName(dspProcessor->getReverbBarLength()).toUTF8()), juce::dontSendNotification);
+        reverbDecayInfoLabel.setText(juce::String::fromUTF8(u8"⏱️ Đuôi vang: ") + juce::String(decaySec, 2) + "s (" + TempoSyncEngine::getBarLengthName(dspProcessor->getReverbBarLength()) + ")", juce::dontSendNotification);
     }
     else
     {
@@ -411,7 +411,7 @@ void BuiltInDspComponent::updateAllUI()
     {
         delaySubdivisionCombo.setSelectedId(static_cast<int>(dspProcessor->getDelaySubdivision()) + 1, juce::dontSendNotification);
         float delayMs = TempoSyncEngine::calculateDelayTimeMs(currentBpm, dspProcessor->getDelaySubdivision());
-        delayTimeInfoLabel.setText(juce::String::formatted(u8"⏱️ Nhại: %.0f ms (%s)", delayMs, (const char*)TempoSyncEngine::getSubdivisionName(dspProcessor->getDelaySubdivision()).toUTF8()), juce::dontSendNotification);
+        delayTimeInfoLabel.setText(juce::String::fromUTF8(u8"⏱️ Độ trễ: ") + juce::String(static_cast<int>(std::round(delayMs))) + " ms (" + TempoSyncEngine::getSubdivisionName(dspProcessor->getDelaySubdivision()) + ")", juce::dontSendNotification);
     }
     else
     {

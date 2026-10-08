@@ -125,7 +125,7 @@ juce::String TempoSyncEngine::getSubdivisionName(DelaySubdivision subdivision)
     case DelaySubdivision::TripletEighth: return "1/8T (Triplet)";
     case DelaySubdivision::Sixteenth:     return "1/16";
     case DelaySubdivision::Half:          return "1/2";
-    case DelaySubdivision::Free:          return "Free (ms)";
+    case DelaySubdivision::Free:          return "Free";
     default:                              return "1/8D";
     }
 }
@@ -134,11 +134,11 @@ juce::String TempoSyncEngine::getBarLengthName(ReverbBarLength barLength)
 {
     switch (barLength)
     {
-    case ReverbBarLength::HalfBar:  return "1/2 Bar (Fast Rap)";
-    case ReverbBarLength::OneBar:   return juce::String::fromUTF8(u8"1 Bar (Sạch Studio ⭐)");
-    case ReverbBarLength::TwoBars:  return juce::String::fromUTF8(u8"2 Bars (Dạt Dào Ballad)");
-    case ReverbBarLength::FourBars: return juce::String::fromUTF8(u8"4 Bars (Không Gian Rộng)");
-    case ReverbBarLength::Free:     return juce::String::fromUTF8(u8"Chỉnh tay (Free)");
+    case ReverbBarLength::HalfBar:  return "1/2 Bar";
+    case ReverbBarLength::OneBar:   return "1 Bar";
+    case ReverbBarLength::TwoBars:  return "2 Bars";
+    case ReverbBarLength::FourBars: return "4 Bars";
+    case ReverbBarLength::Free:     return "Free";
     default:                        return "1 Bar";
     }
 }
