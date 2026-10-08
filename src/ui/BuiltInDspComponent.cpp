@@ -169,6 +169,7 @@ BuiltInDspComponent::BuiltInDspComponent(GraphManager& graphMgr)
         }
     };
 
+    aiAutoEqButton.setButtonText(juce::String::fromUTF8(u8"✨ AI AUTO-EQ"));
     aiAutoEqButton.setTooltip(juce::String::fromUTF8(u8"Phân tích chất giọng AI & Tự động cân chỉnh đường cong EQ 1-Click"));
     aiAutoEqButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff7c3aed)); // Purple Violet
     aiAutoEqButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);

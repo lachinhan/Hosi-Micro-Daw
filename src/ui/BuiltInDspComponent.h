@@ -62,7 +62,7 @@ private:
     // --- 3. Studio EQ Module ---
     juce::TextButton eqPwrButton{ "PWR" };
     juce::Label eqTitleLabel;
-    juce::TextButton aiAutoEqButton{ "✨ AI AUTO-EQ" };
+    juce::TextButton aiAutoEqButton;
     juce::Slider eqLowSlider, eqMidSlider, eqHighSlider;
     juce::Label eqLowLabel, eqMidLabel, eqHighLabel;
 
