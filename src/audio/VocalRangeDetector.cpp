@@ -28,7 +28,7 @@ void VocalRangeDetector::reset()
 
 void VocalRangeDetector::startScan(float durationSeconds)
 {
-    float duration = std::clamp(durationSeconds, 3.0f, 15.0f);
+    float duration = std::clamp(durationSeconds, 5.0f, 30.0f);
     scanTotalSamplesTarget = static_cast<int>(currentSampleRate * duration);
     scanRecordedSamples = 0;
     tempScanLowestMidi = 127;
@@ -38,6 +38,14 @@ void VocalRangeDetector::startScan(float durationSeconds)
     isScanningActive.store(true, std::memory_order_release);
 }
 
+float VocalRangeDetector::getRemainingScanSeconds() const noexcept
+{
+    if (!isScanningActive.load(std::memory_order_relaxed))
+        return 0.0f;
+    int remainingSamples = std::max(0, scanTotalSamplesTarget - scanRecordedSamples);
+    return static_cast<float>(remainingSamples) / static_cast<float>(currentSampleRate);
+}
+
 void VocalRangeDetector::stopScan()
 {
     if (isScanningActive.load(std::memory_order_relaxed))
@@ -45,7 +53,7 @@ void VocalRangeDetector::stopScan()
         isScanningActive.store(false, std::memory_order_release);
         scanProgress.store(1.0f, std::memory_order_release);
 
-        if (validPitchesSampled >= 10 && tempScanLowestMidi <= tempScanHighestMidi)
+        if (validPitchesSampled >= 4 && tempScanLowestMidi <= tempScanHighestMidi)
         {
             profile.lowestMidi = std::clamp(tempScanLowestMidi, 36, 84);   // C2 to C6
             profile.highestMidi = std::clamp(tempScanHighestMidi, 48, 96); // C3 to C7
@@ -58,6 +66,7 @@ void VocalRangeDetector::stopScan()
         }
     }
 }
+
 
 void VocalRangeDetector::setCustomRange(int lowestMidi, int highestMidi)
 {
@@ -241,15 +250,24 @@ void VocalRangeDetector::detectPitchFromWindow()
 
             if (consecutivePitchMatches >= 2)
             {
-                // If scanning is active, record boundaries
+                // If scanning is active, record boundaries and live-update profile
                 if (isScanningActive.load(std::memory_order_relaxed))
                 {
-                    if (midi < tempScanLowestMidi) tempScanLowestMidi = midi;
-                    if (midi > tempScanHighestMidi) tempScanHighestMidi = midi;
+                    bool changed = false;
+                    if (midi < tempScanLowestMidi) { tempScanLowestMidi = midi; changed = true; }
+                    if (midi > tempScanHighestMidi) { tempScanHighestMidi = midi; changed = true; }
                     validPitchesSampled++;
+
+                    if (changed && validPitchesSampled >= 2)
+                    {
+                        profile.lowestMidi = std::clamp(tempScanLowestMidi, 36, 84);
+                        profile.highestMidi = std::clamp(tempScanHighestMidi, profile.lowestMidi + 2, 96);
+                        updateClassification();
+                    }
                 }
             }
             return;
+
         }
     }
 

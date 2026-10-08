@@ -19,6 +19,7 @@ AiVocalRangeOverlay::AiVocalRangeOverlay(VocalRangeDetector& detector, SongbookM
     addAndMakeVisible(subtitleLabel);
 
     // Close Button
+    closeButton.setButtonText(juce::String::fromUTF8(u8"✕"));
     closeButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0x33ffffff));
     closeButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     closeButton.onClick = [this]() {
@@ -27,35 +28,38 @@ AiVocalRangeOverlay::AiVocalRangeOverlay(VocalRangeDetector& detector, SongbookM
     };
     addAndMakeVisible(closeButton);
 
+
     // Range Bar Visualizer
     addAndMakeVisible(rangeBarVisualizer);
 
     // Start Scan Button
+    startScanButton.setButtonText(juce::String::fromUTF8(u8"🎙️ BẮT ĐẦU ĐO ÂM VỰC (15 GIÂY)"));
     startScanButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff059669)); // Emerald Green
     startScanButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     startScanButton.onClick = [this]() {
         if (rangeDetector.isScanning())
         {
             rangeDetector.stopScan();
-            startScanButton.setButtonText(juce::String::fromUTF8(u8"🎙️ BẮT ĐẦU ĐO ÂM VỰC (5s QUÉT GIỌNG)"));
+            startScanButton.setButtonText(juce::String::fromUTF8(u8"🎙️ BẮT ĐẦU ĐO ÂM VỰC (15 GIÂY)"));
             startScanButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff059669));
-            scanStatusLabel.setText(juce::String::fromUTF8(u8"Đã hoàn tất đo âm vực!"), juce::dontSendNotification);
+            scanStatusLabel.setText(juce::String::fromUTF8(u8"✅ Đã hoàn tất đo âm vực! Kết quả đã được lưu."), juce::dontSendNotification);
             updateRecommendations();
         }
         else
         {
-            rangeDetector.startScan(6.0f);
+            rangeDetector.startScan(15.0f);
             startScanButton.setButtonText(juce::String::fromUTF8(u8"⏹️ DỪNG ĐO & LƯU KẾT QUẢ"));
             startScanButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xffdc2626)); // Red
-            scanStatusLabel.setText(juce::String::fromUTF8(u8"Đang quét giọng... Hãy hát ngân từ nốt trầm nhất lên nốt cao nhất của bạn vào Micro!"), juce::dontSendNotification);
+            scanStatusLabel.setText(juce::String::fromUTF8(u8"🎙️ Đang quét giọng... Hãy ngân từ nốt trầm nhất (\"Ồ...\") rồi lướt dần lên nốt cao nhất (\"Í...\")!"), juce::dontSendNotification);
         }
     };
     addAndMakeVisible(startScanButton);
 
-    scanStatusLabel.setText(juce::String::fromUTF8(u8"Nhấn 'Bắt Đầu Đo' và hát thử một câu từ nốt trầm đến nốt cao để AI phân tích."), juce::dontSendNotification);
+    scanStatusLabel.setText(juce::String::fromUTF8(u8"💡 Cách đo chuẩn: Lấy hơi sâu, ngân từ nốt trầm nhất (\"Ồ...\") rồi lướt dần giọng lên nốt cao nhất (\"Í...\") vào Micro."), juce::dontSendNotification);
     scanStatusLabel.setFont(juce::FontOptions(12.5f, juce::Font::plain));
     scanStatusLabel.setColour(juce::Label::textColourId, juce::Colour(0xfffcd34d)); // Amber
     addAndMakeVisible(scanStatusLabel);
+
 
     scanProgressBar.setColour(juce::ProgressBar::foregroundColourId, juce::Colour(0xff10b981));
     scanProgressBar.setColour(juce::ProgressBar::backgroundColourId, juce::Colour(0xff1e293b));
@@ -204,23 +208,38 @@ void AiVocalRangeOverlay::timerCallback()
 
     if (rangeDetector.isScanning())
     {
+        float remSec = rangeDetector.getRemainingScanSeconds();
         auto live = rangeDetector.getLivePitch();
+        const auto& prof = rangeDetector.getProfile();
+
+        juce::String status = juce::String::fromUTF8(u8"🎙️ ĐANG ĐO (còn ") + juce::String(remSec, 1) + juce::String::fromUTF8(u8"s)... Hãy ngân lướt: \"Ồ ➔ Ó ➔ Í...\"!");
         if (live.isVoiceActive && live.currentMidi > 0)
         {
-            scanStatusLabel.setText(juce::String::fromUTF8(u8"Đang nhận diện giọng: ") + live.noteName + 
-                " (" + juce::String(live.currentHz, 1) + " Hz)...", juce::dontSendNotification);
+            status += juce::String::fromUTF8(u8" | Nốt đang hát: ") + live.noteName + " (" + juce::String(live.currentHz, 1) + " Hz)";
         }
+        scanStatusLabel.setText(status, juce::dontSendNotification);
+
+        // Update Banner text live as the user sings
+        juce::String bannerText = juce::String::fromUTF8(u8"🏷️ Phân Loại Giọng: ") + prof.vocalClassName +
+            juce::String::fromUTF8(u8"  |  Quãng: ") + prof.getLowestNoteName() + " ➔ " + prof.getHighestNoteName() +
+            " (" + juce::String(prof.getSpanSemitones()) + juce::String::fromUTF8(u8" bán âm)");
+        vocalClassBanner.setText(bannerText, juce::dontSendNotification);
+
+        // Update combos without triggering events
+        lowNoteCombo.setSelectedId(prof.lowestMidi - 36 + 1, juce::dontSendNotification);
+        highNoteCombo.setSelectedId(prof.highestMidi - 36 + 1, juce::dontSendNotification);
     }
     else if (startScanButton.getButtonText().contains(juce::String::fromUTF8(u8"DỪNG")))
     {
-        startScanButton.setButtonText(juce::String::fromUTF8(u8"🎙️ BẮT ĐẦU ĐO ÂM VỰC (5s QUÉT GIỌNG)"));
+        startScanButton.setButtonText(juce::String::fromUTF8(u8"🎙️ BẮT ĐẦU ĐO ÂM VỰC (15 GIÂY)"));
         startScanButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff059669));
-        scanStatusLabel.setText(juce::String::fromUTF8(u8"✅ Đo âm vực hoàn tất! Kết quả đã được lưu."), juce::dontSendNotification);
+        scanStatusLabel.setText(juce::String::fromUTF8(u8"✅ Đo âm vực hoàn tất! Bạn có thể đo lại bất cứ lúc nào hoặc bấm 'Lưu & Hoàn Tất'."), juce::dontSendNotification);
         updateRecommendations();
     }
 
     rangeBarVisualizer.repaint();
 }
+
 
 void AiVocalRangeOverlay::updateRecommendations()
 {

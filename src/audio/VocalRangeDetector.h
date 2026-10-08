@@ -54,11 +54,14 @@ public:
     void prepare(double sampleRate, int samplesPerBlock);
     void reset();
 
-    // Calibration / 5-second Vocal Range Scan
-    void startScan(float durationSeconds = 6.0f);
+    // Calibration / Vocal Range Scan (15s flexible glissando scan)
+    void startScan(float durationSeconds = 15.0f);
     void stopScan();
     bool isScanning() const noexcept { return isScanningActive.load(std::memory_order_relaxed); }
     float getScanProgress() const noexcept { return scanProgress.load(std::memory_order_relaxed); }
+    float getRemainingScanSeconds() const noexcept;
+    int getValidPitchesCount() const noexcept { return validPitchesSampled; }
+
 
     // Live continuous pitch tracking mode
     void setLiveTrackingEnabled(bool enabled) noexcept { liveTrackingEnabled.store(enabled, std::memory_order_release); }
