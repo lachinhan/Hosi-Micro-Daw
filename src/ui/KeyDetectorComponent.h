@@ -189,10 +189,14 @@ private:
     void handleToggleRecord();
     void updateTransportUI();
     void updateKeyUI();
+    void scanAutoKeyPluginsInRack();
     void updateAutoPushUI();
     void updateDuckingButtonUI();
     void showDuckingSettingsMenu();
     void updateRecordButtonUI();
+
+    juce::String lastAutoKeyPluginKey;
+    double lastAutoKeyPluginBpm{ 0.0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(KeyDetectorComponent)
 };

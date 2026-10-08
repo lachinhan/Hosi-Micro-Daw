@@ -666,10 +666,95 @@ void KeyDetectorComponent::updateRecordButtonUI()
     recButton.setColour(juce::TextButton::textColourOffId, isRec ? juce::Colours::white : juce::Colour(0xffef4444));
 }
 
+void KeyDetectorComponent::scanAutoKeyPluginsInRack()
+{
+    const auto& slots = graphManager.getSlots();
+    for (const auto& slot : slots)
+    {
+        if (slot.node != nullptr && slot.node->getProcessor() != nullptr)
+        {
+            auto* proc = slot.node->getProcessor();
+            const juce::String procName = proc->getName().toLowerCase();
+
+            if (procName.contains("auto-key") || procName.contains("autokey") || procName.contains("songkey") || procName.contains("key detector"))
+            {
+                int detectedRoot = -1;
+                KeyDetector::ScaleType detectedScale = KeyDetector::ScaleType::Unknown;
+                double detectedBpm = 0.0;
+                bool sendTriggered = false;
+
+                for (auto* param : proc->getParameters())
+                {
+                    const juce::String pName = param->getName(64).toLowerCase().trim();
+                    const float val = param->getValue();
+
+                    // Key / Root note
+                    if (pName == "key" || pName == "root" || pName == "detected key" || pName == "tonic" || pName == "root note")
+                    {
+                        int steps = param->getNumSteps();
+                        if (steps <= 1) steps = 12;
+                        int rootIdx = static_cast<int>(std::round(val * (steps - 1)));
+                        if (rootIdx >= 0 && rootIdx < 12)
+                            detectedRoot = rootIdx;
+                    }
+                    // Scale
+                    else if (pName == "scale" || pName == "detected scale" || pName == "scale type" || pName == "scale mode")
+                    {
+                        if (val > 0.3f)
+                            detectedScale = KeyDetector::ScaleType::Minor;
+                        else
+                            detectedScale = KeyDetector::ScaleType::Major;
+                    }
+                    // Tempo / BPM
+                    else if (pName.contains("tempo") || pName.contains("bpm"))
+                    {
+                        juce::String textVal = param->getText(val, 16).trim();
+                        double bpm = textVal.getDoubleValue();
+                        if (bpm < 40.0 || bpm > 260.0)
+                        {
+                            bpm = 40.0 + (val * 200.0);
+                        }
+                        if (bpm >= 40.0 && bpm <= 260.0)
+                            detectedBpm = bpm;
+                    }
+                    // Send to Auto-Tune button
+                    else if (pName.contains("send") || pName.contains("sync"))
+                    {
+                        if (val > 0.5f)
+                            sendTriggered = true;
+                    }
+                }
+
+                // If Tone detected
+                if (detectedRoot >= 0 && detectedScale != KeyDetector::ScaleType::Unknown)
+                {
+                    const juce::String keyFormatted = KeyDetector::formatKeyName(detectedRoot, detectedScale);
+                    if (keyFormatted != lastAutoKeyPluginKey || sendTriggered)
+                    {
+                        lastAutoKeyPluginKey = keyFormatted;
+                        applyKeyToAutoTune(detectedRoot, detectedScale, proc->getName() + " (VST3)", false);
+                    }
+                }
+
+                // If Tempo (BPM) detected
+                if (detectedBpm >= 40.0 && detectedBpm <= 260.0)
+                {
+                    if (std::abs(detectedBpm - lastAutoKeyPluginBpm) > 0.5)
+                    {
+                        lastAutoKeyPluginBpm = detectedBpm;
+                        graphManager.getTempoSyncEngine().setBpm(detectedBpm, proc->getName() + " (VST3)");
+                    }
+                }
+            }
+        }
+    }
+}
+
 void KeyDetectorComponent::timerCallback()
 {
     updateTransportUI();
     updateKeyUI();
+    scanAutoKeyPluginsInRack();
     updateRecordButtonUI();
     repaint();
 }
