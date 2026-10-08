@@ -694,7 +694,10 @@ void BuiltInDspComponent::resized()
 
     if (profilerOverlay != nullptr)
     {
-        profilerOverlay->setBounds(getLocalBounds());
+        if (auto* top = getTopLevelComponent())
+            profilerOverlay->setBounds(top->getLocalBounds());
+        else
+            profilerOverlay->setBounds(getLocalBounds());
     }
 }
 
@@ -708,6 +711,15 @@ void BuiltInDspComponent::showAiVocalProfilerOverlay()
         updateAllUI();
         repaint();
     };
-    addAndMakeVisible(*profilerOverlay);
-    profilerOverlay->setBounds(getLocalBounds());
+
+    if (auto* top = getTopLevelComponent())
+    {
+        top->addAndMakeVisible(*profilerOverlay);
+        profilerOverlay->setBounds(top->getLocalBounds());
+    }
+    else
+    {
+        addAndMakeVisible(*profilerOverlay);
+        profilerOverlay->setBounds(getLocalBounds());
+    }
 }

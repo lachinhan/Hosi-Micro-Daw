@@ -185,13 +185,39 @@ void AiVocalProfilerOverlay::handleApplyEq()
     );
 }
 
+void AiVocalProfilerOverlay::mouseDown(const juce::MouseEvent& e)
+{
+    const int cardW = std::min(520, getWidth() - 30);
+    const int cardH = std::min(490, getHeight() - 20);
+    auto cardBounds = getLocalBounds().withSizeKeepingCentre(cardW, cardH);
+    if (!cardBounds.contains(e.getPosition()))
+    {
+        dspProcessor.cancelVocalProfiling();
+        if (onClose) onClose();
+    }
+}
+
+bool AiVocalProfilerOverlay::keyPressed(const juce::KeyPress& key)
+{
+    if (key.isKeyCode(juce::KeyPress::escapeKey))
+    {
+        dspProcessor.cancelVocalProfiling();
+        if (onClose) onClose();
+        return true;
+    }
+    return false;
+}
+
 void AiVocalProfilerOverlay::paint(juce::Graphics& g)
 {
-    // Dimmed background
-    g.fillAll(juce::Colours::black.withAlpha(0.65f));
+    // Dimmed background for entire main window
+    g.fillAll(juce::Colours::black.withAlpha(0.70f));
 
-    // Modal Card
-    auto bounds = getLocalBounds().reduced(20, 15).toFloat();
+    // Centered Modal Card (520px x 490px)
+    const int cardW = std::min(520, getWidth() - 30);
+    const int cardH = std::min(490, getHeight() - 20);
+    auto bounds = getLocalBounds().withSizeKeepingCentre(cardW, cardH).toFloat();
+
     g.setGradientFill(juce::ColourGradient(
         juce::Colour(0xff1e1b4b), bounds.getCentreX(), bounds.getY(),
         juce::Colour(0xff0f172a), bounds.getCentreX(), bounds.getBottom(), false
@@ -199,54 +225,57 @@ void AiVocalProfilerOverlay::paint(juce::Graphics& g)
     g.fillRoundedRectangle(bounds, 12.0f);
 
     // Card Glow Border
-    g.setColour(juce::Colour(0xffa855f7).withAlpha(0.60f));
+    g.setColour(juce::Colour(0xffa855f7).withAlpha(0.65f));
     g.drawRoundedRectangle(bounds, 12.0f, 1.5f);
 }
 
 void AiVocalProfilerOverlay::resized()
 {
-    auto area = getLocalBounds().reduced(35, 25);
+    const int cardW = std::min(520, getWidth() - 30);
+    const int cardH = std::min(490, getHeight() - 20);
+    auto cardBounds = getLocalBounds().withSizeKeepingCentre(cardW, cardH);
+    auto area = cardBounds.reduced(24, 18);
 
     // Top Row: Title + Close Button
-    auto topRow = area.removeFromTop(30);
+    auto topRow = area.removeFromTop(28);
     closeButton.setBounds(topRow.removeFromRight(28).reduced(2));
     titleLabel.setBounds(topRow);
 
-    area.removeFromTop(8);
+    area.removeFromTop(6);
 
     // Instruction Label
-    instructionLabel.setBounds(area.removeFromTop(34));
-    area.removeFromTop(10);
+    instructionLabel.setBounds(area.removeFromTop(32));
+    area.removeFromTop(8);
 
     // Start Record Button + Progress Bar
-    startRecordButton.setBounds(area.removeFromTop(38).reduced(40, 0));
-    area.removeFromTop(6);
-    progressBar.setBounds(area.removeFromTop(14).reduced(40, 0));
+    startRecordButton.setBounds(area.removeFromTop(36).reduced(20, 0));
+    area.removeFromTop(4);
+    progressBar.setBounds(area.removeFromTop(12).reduced(20, 0));
 
-    area.removeFromTop(12);
+    area.removeFromTop(10);
 
     // Diagnostics Group
     auto groupArea = area.removeFromTop(130);
     resultsGroup.setBounds(groupArea);
-    auto groupContent = groupArea.reduced(12, 18);
+    auto groupContent = groupArea.reduced(14, 16);
     voiceTypeLabel.setBounds(groupContent.removeFromTop(20));
     groupContent.removeFromTop(4);
     diagnosticsLabel.setBounds(groupContent);
 
-    area.removeFromTop(10);
+    area.removeFromTop(8);
 
     // Style Selector
-    auto styleRow = area.removeFromTop(28);
-    styleTitleLabel.setBounds(styleRow.removeFromLeft(200));
+    auto styleRow = area.removeFromTop(26);
+    styleTitleLabel.setBounds(styleRow.removeFromLeft(190));
     styleComboBox.setBounds(styleRow);
+
+    area.removeFromTop(8);
+
+    // EQ Preview Label
+    eqPreviewLabel.setBounds(area.removeFromTop(26));
 
     area.removeFromTop(10);
 
-    // EQ Preview Label
-    eqPreviewLabel.setBounds(area.removeFromTop(28));
-
-    area.removeFromTop(12);
-
     // Apply Button
-    applyButton.setBounds(area.removeFromTop(38).reduced(30, 0));
+    applyButton.setBounds(area.removeFromTop(36).reduced(20, 0));
 }

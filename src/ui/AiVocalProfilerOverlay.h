@@ -12,6 +12,8 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
     void timerCallback() override;
+    void mouseDown(const juce::MouseEvent& e) override;
+    bool keyPressed(const juce::KeyPress& key) override;
 
     std::function<void()> onClose;
 
