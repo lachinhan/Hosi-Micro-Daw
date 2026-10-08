@@ -130,6 +130,7 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
 
     // --- Quick 1-Touch AI Denoise & Room De-Reverb Shield Button ---
     aiShieldButton.setTooltip(juce::String::fromUTF8(u8"Khử ồn & triệt tiêu dội âm phòng AI thời gian thực (DeepFilter AI Shield)\n• Click trái: Bật / Tắt AI Shield\n• Click phải: Chọn cường độ khử ồn (Nhẹ 40%, Studio 75%, Mạnh 90%) hoặc bật/tắt De-Reverb..."));
+#if HOSI_PRO_EDITION
     aiShieldButton.onToggle = [this] {
         auto* dsp = graphManager.getBuiltInDsp();
         if (dsp != nullptr)
@@ -144,6 +145,24 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
     aiShieldButton.onRightClick = [this] {
         showAiShieldSettingsMenu();
     };
+#else
+    aiShieldButton.onToggle = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Lá chắn AI Noise & Room De-Reverb Shield thời gian thực độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nGiúp khử sạch tiếng ồn môi trường, quạt gió, ve kêu và triệt tiêu dội âm phòng khi hát live. Hãy nâng cấp PRO để trải nghiệm."),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+    aiShieldButton.onRightClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Lá chắn AI Noise & Room De-Reverb Shield thời gian thực độc quyền trên LiveStream Micro-DAW PRO v3.0!"),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     addAndMakeVisible(aiShieldButton);
     updateAiShieldButtonUI();
 
@@ -214,16 +233,38 @@ KeyDetectorComponent::KeyDetectorComponent(GraphManager& graphMgr)
     bpmButton.setTooltip(juce::String::fromUTF8(u8"Tempo bài hát (BPM). Click để đổi tốc độ chuẩn theo thể loại hoặc nhập số"));
     bpmButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
     bpmButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff59e0b)); // Gold
+#if HOSI_PRO_EDITION
     bpmButton.onClick = [this] { showBpmSettingsMenu(); };
+#else
+    bpmButton.onClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Bộ đồng bộ nhịp tự động (Smart Tempo / BPM Sync Engine) đồng bộ hiệu ứng Reverb & Delay theo phách nhịp độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để sử dụng."),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     addAndMakeVisible(bpmButton);
 
     tapTempoButton.setTooltip(juce::String::fromUTF8(u8"Nhấp chuột 2-4 lần theo nhịp bài hát để định lượng Tempo (Tap Tempo)"));
     tapTempoButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff312e81)); // Dark indigo
     tapTempoButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xffa5b4fc));
+#if HOSI_PRO_EDITION
     tapTempoButton.onClick = [this] {
         graphManager.getTempoSyncEngine().tapTempo();
         updateKeyUI();
     };
+#else
+    tapTempoButton.onClick = [this] {
+        juce::AlertWindow::showMessageBoxAsync(
+            juce::AlertWindow::InfoIcon,
+            juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+            juce::String::fromUTF8(u8"Tính năng Tap Tempo định lượng nhịp tự động độc quyền trên LiveStream Micro-DAW PRO v3.0!"),
+            juce::String::fromUTF8(u8"Đã Hiểu")
+        );
+    };
+#endif
     addAndMakeVisible(tapTempoButton);
 
     // --- Source Toggle ---
@@ -385,6 +426,15 @@ void KeyDetectorComponent::updateKeyUI()
 
 void KeyDetectorComponent::showBpmSettingsMenu()
 {
+#if !HOSI_PRO_EDITION
+    juce::AlertWindow::showMessageBoxAsync(
+        juce::AlertWindow::InfoIcon,
+        juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+        juce::String::fromUTF8(u8"Bộ đồng bộ nhịp tự động (Smart Tempo / BPM Sync Engine) đồng bộ hiệu ứng Reverb & Delay theo phách nhịp độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để sử dụng."),
+        juce::String::fromUTF8(u8"Đã Hiểu")
+    );
+    return;
+#else
     juce::PopupMenu menu;
     menu.addSectionHeader(juce::String::fromUTF8(u8"CÀI ĐẶT TEMPO / BPM (SMART SYNC DELAY & REVERB)"));
 
@@ -443,6 +493,7 @@ void KeyDetectorComponent::showBpmSettingsMenu()
         }
         updateKeyUI();
     });
+#endif
 }
 
 void KeyDetectorComponent::showManualKeySelectMenu()
@@ -928,6 +979,7 @@ void KeyDetectorComponent::showDuckingSettingsMenu()
 
 void KeyDetectorComponent::updateAiShieldButtonUI()
 {
+#if HOSI_PRO_EDITION
     auto* dsp = graphManager.getBuiltInDsp();
     if (dsp == nullptr) return;
 
@@ -953,10 +1005,24 @@ void KeyDetectorComponent::updateAiShieldButtonUI()
         aiShieldButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
         aiShieldButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xff94a3b8));
     }
+#else
+    aiShieldButton.setButtonText(juce::String::fromUTF8(u8"🔒 AI: PRO"));
+    aiShieldButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff1e293b));
+    aiShieldButton.setColour(juce::TextButton::textColourOffId, juce::Colour(0xfff59e0b)); // Amber/Gold
+#endif
 }
 
 void KeyDetectorComponent::showAiShieldSettingsMenu()
 {
+#if !HOSI_PRO_EDITION
+    juce::AlertWindow::showMessageBoxAsync(
+        juce::AlertWindow::InfoIcon,
+        juce::String::fromUTF8(u8"🔥 TÍNH NĂNG PRO EXCLUSIVE"),
+        juce::String::fromUTF8(u8"Lá chắn AI Noise & Room De-Reverb Shield độc quyền trên LiveStream Micro-DAW PRO v3.0!\n\nHãy nâng cấp phiên bản PRO để sử dụng."),
+        juce::String::fromUTF8(u8"Đã Hiểu")
+    );
+    return;
+#else
     auto* dsp = graphManager.getBuiltInDsp();
     if (dsp == nullptr) return;
 
@@ -1008,6 +1074,7 @@ void KeyDetectorComponent::showAiShieldSettingsMenu()
 
             updateAiShieldButtonUI();
         });
+#endif
 }
 
 void KeyDetectorComponent::resized()

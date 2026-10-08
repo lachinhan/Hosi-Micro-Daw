@@ -44,6 +44,7 @@ public:
     double getHostBpm() const noexcept { return hostBpm.load(std::memory_order_relaxed); }
 
     // --- 1. AI Noise & Room De-Reverb Shield ---
+#if HOSI_PRO_EDITION
     void setAiDenoiseEnabled(bool enabled) noexcept { aiNoiseSuppressor.setEnabled(enabled); sendChangeMessage(); }
     bool isAiDenoiseEnabled() const noexcept { return aiNoiseSuppressor.isEnabled(); }
     void setAiDenoiseAmount(float amount) noexcept { aiNoiseSuppressor.setDenoiseAmount(amount); sendChangeMessage(); }
@@ -56,6 +57,20 @@ public:
 
     float getAiNoiseReductionDb() const noexcept { return aiNoiseSuppressor.getNoiseReductionDb(); }
     float getAiVoiceProbability() const noexcept { return aiNoiseSuppressor.getVoiceProbability(); }
+#else
+    void setAiDenoiseEnabled(bool) noexcept {}
+    bool isAiDenoiseEnabled() const noexcept { return false; }
+    void setAiDenoiseAmount(float) noexcept {}
+    float getAiDenoiseAmount() const noexcept { return 0.0f; }
+
+    void setAiDeReverbEnabled(bool) noexcept {}
+    bool isAiDeReverbEnabled() const noexcept { return false; }
+    void setAiDeReverbAmount(float) noexcept {}
+    float getAiDeReverbAmount() const noexcept { return 0.0f; }
+
+    float getAiNoiseReductionDb() const noexcept { return 0.0f; }
+    float getAiVoiceProbability() const noexcept { return 0.0f; }
+#endif
 
     // --- AI Vocal Profiler & Smart Auto-EQ ---
     AiVocalProfiler& getAiVocalProfiler() noexcept { return aiVocalProfiler; }
@@ -125,10 +140,17 @@ public:
     void setReverbWetMix(float wet) noexcept { reverbWetMix.store(wet, std::memory_order_release); }
     float getReverbWetMix() const noexcept { return reverbWetMix.load(std::memory_order_relaxed); }
 
+#if HOSI_PRO_EDITION
     void setReverbBpmSync(bool sync) noexcept { reverbBpmSync.store(sync, std::memory_order_release); updateReverbParams(); }
     bool isReverbBpmSync() const noexcept { return reverbBpmSync.load(std::memory_order_relaxed); }
     void setReverbBarLength(TempoSyncEngine::ReverbBarLength bars) noexcept { reverbBarLength.store(bars, std::memory_order_release); updateReverbParams(); }
     TempoSyncEngine::ReverbBarLength getReverbBarLength() const noexcept { return reverbBarLength.load(std::memory_order_relaxed); }
+#else
+    void setReverbBpmSync(bool) noexcept {}
+    bool isReverbBpmSync() const noexcept { return false; }
+    void setReverbBarLength(TempoSyncEngine::ReverbBarLength) noexcept {}
+    TempoSyncEngine::ReverbBarLength getReverbBarLength() const noexcept { return TempoSyncEngine::ReverbBarLength::OneBar; }
+#endif
 
     // --- Stereo Delay / Echo Controls & Smart BPM Subdivision ---
     void setDelayEnabled(bool enabled) noexcept { delayEnabled.store(enabled, std::memory_order_release); }
@@ -140,10 +162,17 @@ public:
     void setDelayWetMix(float wet) noexcept { delayWetMix.store(wet, std::memory_order_release); }
     float getDelayWetMix() const noexcept { return delayWetMix.load(std::memory_order_relaxed); }
 
+#if HOSI_PRO_EDITION
     void setDelayBpmSync(bool sync) noexcept { delayBpmSync.store(sync, std::memory_order_release); }
     bool isDelayBpmSync() const noexcept { return delayBpmSync.load(std::memory_order_relaxed); }
     void setDelaySubdivision(TempoSyncEngine::DelaySubdivision div) noexcept { delaySubdivision.store(div, std::memory_order_release); }
     TempoSyncEngine::DelaySubdivision getDelaySubdivision() const noexcept { return delaySubdivision.load(std::memory_order_relaxed); }
+#else
+    void setDelayBpmSync(bool) noexcept {}
+    bool isDelayBpmSync() const noexcept { return false; }
+    void setDelaySubdivision(TempoSyncEngine::DelaySubdivision) noexcept {}
+    TempoSyncEngine::DelaySubdivision getDelaySubdivision() const noexcept { return TempoSyncEngine::DelaySubdivision::Eighth; }
+#endif
 
     float getEffectiveDelayTimeMs() const noexcept
     {

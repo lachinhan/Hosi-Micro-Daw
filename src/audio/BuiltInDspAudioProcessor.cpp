@@ -129,7 +129,11 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     if (numSamples <= 0 || numChannels <= 0)
         return;
 
+#if HOSI_PRO_EDITION
     const bool hasAi = aiNoiseSuppressor.isEnabled();
+#else
+    const bool hasAi = false;
+#endif
     const bool hasGate = gateEnabled.load(std::memory_order_relaxed);
     const bool hasEq = eqEnabled.load(std::memory_order_relaxed);
     const bool hasComp = compEnabled.load(std::memory_order_relaxed);
@@ -137,6 +141,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     const bool hasReverb = reverbEnabled.load(std::memory_order_relaxed);
     const bool hasLimiter = limiterEnabled.load(std::memory_order_relaxed);
 
+#if HOSI_PRO_EDITION
     // AI Vocal Profiler Input Feed (If actively recording sample)
     if (aiVocalProfiler.isProfiling())
     {
@@ -145,12 +150,13 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
 
     // AI Vocal Range Detector Feed (Real-time pitch and vocal scan)
     vocalRangeDetector.processBlock(buffer);
-
+#endif
 
     // If completely bypassed, return immediately with 0 overhead
     if (!hasAi && !hasGate && !hasEq && !hasComp && !hasDelay && !hasReverb && !hasLimiter)
         return;
 
+#if HOSI_PRO_EDITION
     // -------------------------------------------------------------
     // 0. AI REAL-TIME NOISE SUPPRESSOR & ROOM DE-REVERB SHIELD
     // -------------------------------------------------------------
@@ -158,6 +164,7 @@ void BuiltInDspAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     {
         aiNoiseSuppressor.process(buffer);
     }
+#endif
 
     // Check EQ coefficient updates
     if (hasEq && needEqUpdate.load(std::memory_order_relaxed))
