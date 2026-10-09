@@ -1,8 +1,8 @@
 {
-  "latest_version": "2.0.3",
-  "release_date": "2026-10-08",
+  "latest_version": "2.0.4",
+  "release_date": "2026-10-09",
   "download_url": "https://www.lachinhan.xyz",
   "setup_url": "https://github.com/lachinhan/Hosi-Micro-Daw/raw/main/LiveStream_Micro_DAW_Setup.exe",
-  "changelog": "• Tích hợp trung tâm hỗ trợ nâng cấp PRO với 1-Click Zalo & Website trực tiếp.\n• Bổ sung nút YouTube Beat trực quan trên thanh điều khiển Top Bar.\n• Nâng cấp hệ thống gợi ý & quản lý Sổ Tone 1.033+ bài hát mượt mà.\n• Tối ưu hiệu năng Studio Vocal DSP, chống trễ 0ms cho livestream."
+  "changelog": "• Hợp nhất kiến trúc Bản quyền In-App Activation: Mở khóa PRO VIP tức thì khi nhập Key.\n• Bổ sung tùy chọn Gói Bản Quyền 1 Tháng (30 Ngày) linh hoạt.\n• Bổ sung tính năng Gỡ Key bản quyền nhanh để dễ dàng chuyển đổi máy.\n• Tối ưu hóa toàn diện hiệu năng DSP, AI Denoise DeepFilter và YouTube Player."
 }
 
