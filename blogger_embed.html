@@ -304,25 +304,41 @@
     color: #64748b;
     margin-bottom: 16px;
   }
-  #micro-daw-root .hosi-price-features {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 20px 0;
-    text-align: left;
-    font-size: 13px;
-    color: #475569;
-    line-height: 1.8;
+
+  /* Bulletproof List Styling to eliminate Blogger square bullet & entity overlap */
+  #micro-daw-root .hosi-price-features,
+  #micro-daw-root ul.hosi-price-features {
+    list-style: none !important;
+    list-style-type: none !important;
+    padding: 0 !important;
+    margin: 0 0 20px 0 !important;
+    text-align: left !important;
+    font-size: 13px !important;
+    color: #475569 !important;
+    line-height: 1.6 !important;
   }
-  #micro-daw-root .hosi-price-features li {
-    padding-left: 18px;
-    position: relative;
+  #micro-daw-root .hosi-price-features li,
+  #micro-daw-root ul.hosi-price-features li {
+    list-style: none !important;
+    list-style-type: none !important;
+    padding: 3px 0 !important;
+    margin: 0 0 4px 0 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
   }
-  #micro-daw-root .hosi-price-features li::before {
-    content: "✓";
-    position: absolute;
-    left: 0;
-    color: #16a34a;
-    font-weight: 800;
+  #micro-daw-root .hosi-chk {
+    color: #16a34a !important;
+    font-weight: 800 !important;
+    flex-shrink: 0 !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+  #micro-daw-root .hosi-txt {
+    flex: 1 !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    color: #334155 !important;
   }
 
   /* CTV Affiliate Section */
@@ -738,14 +754,14 @@
         <div class="hosi-price-val">0đ</div>
         <div class="hosi-price-duration">Trải nghiệm Full tính năng PRO</div>
         <ul class="hosi-price-features">
-          <li>Mở khóa 100% tính năng PRO</li>
-          <li>YouTube Player chặn quảng cáo</li>
-          <li>Lá chắn AI Denoise &amp; De-Reverb</li>
-          <li>Đồng bộ Smart BPM Reverb/Delay</li>
-          <li>Hỗ trợ qua Zalo cộng đồng</li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Mở khóa 100% tính năng PRO</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">YouTube Player chặn quảng cáo</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Lá chắn AI Denoise &amp; De-Reverb</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Đồng bộ Smart BPM Reverb/Delay</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Hỗ trợ qua Zalo cộng đồng</span></li>
         </ul>
       </div>
-      <a href="https://zalo.me/g/hosi_microdaw" target="_blank" class="hosi-btn-studio" style="background:#475569;">NHẬN KEY 7 NGÀY</a>
+      <a href="https://zalo.me/g/uvkmqjnxp5ncos07ov0y" target="_blank" class="hosi-btn-studio" style="background:#475569;">NHẬN KEY 7 NGÀY</a>
     </div>
 
     <!-- Tier 2: 1 Month -->
@@ -755,14 +771,14 @@
         <div class="hosi-price-val">99.000đ</div>
         <div class="hosi-price-duration">Thời hạn 30 ngày sử dụng</div>
         <ul class="hosi-price-features">
-          <li>Full tính năng PRO VIP v2.0.4</li>
-          <li>YouTube Karaoke chặn quảng cáo</li>
-          <li>AI Denoise &amp; AI Vocal Profiler</li>
-          <li>Tự động dò tone &amp; đồng bộ Auto-Tune</li>
-          <li>Lý tưởng cho nhu cầu ngắn hạn</li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Full tính năng PRO VIP v2.0.4</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">YouTube Karaoke chặn quảng cáo</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">AI Denoise &amp; AI Vocal Profiler</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Tự động dò tone &amp; đồng bộ Auto-Tune</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Lý tưởng cho nhu cầu ngắn hạn</span></li>
         </ul>
       </div>
-      <a href="https://zalo.me/g/hosi_microdaw" target="_blank" class="hosi-btn-ai">MUA GÓI 1 THÁNG</a>
+      <a href="https://zalo.me/g/uvkmqjnxp5ncos07ov0y" target="_blank" class="hosi-btn-ai">MUA GÓI 1 THÁNG</a>
     </div>
 
     <!-- Tier 3: 1 Year -->
@@ -772,14 +788,14 @@
         <div class="hosi-price-val">590.000đ</div>
         <div class="hosi-price-duration">Thời hạn 365 ngày (Tiết kiệm ~50%)</div>
         <ul class="hosi-price-features">
-          <li>Full tính năng PRO VIP</li>
-          <li>Cập nhật tính năng mới liên tục</li>
-          <li>Hỗ trợ kỹ thuật 1-1 qua UltraView</li>
-          <li>Đồng bộ Sổ Tone Cloud VIP</li>
-          <li>Chuyển đổi máy miễn phí</li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Full tính năng PRO VIP</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Cập nhật tính năng mới liên tục</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Hỗ trợ kỹ thuật 1-1 qua UltraView</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Đồng bộ Sổ Tone Cloud VIP</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Chuyển đổi máy miễn phí</span></li>
         </ul>
       </div>
-      <a href="https://zalo.me/g/hosi_microdaw" target="_blank" class="hosi-btn-studio" style="background:#059669;">MUA GÓI 1 NĂM</a>
+      <a href="https://zalo.me/g/uvkmqjnxp5ncos07ov0y" target="_blank" class="hosi-btn-studio" style="background:#059669;">MUA GÓI 1 NĂM</a>
     </div>
 
     <!-- Tier 4: Lifetime -->
@@ -790,14 +806,14 @@
         <div class="hosi-price-val">990.000đ</div>
         <div class="hosi-price-duration">Sở hữu Vĩnh Viễn • Nâng cấp trọn đời</div>
         <ul class="hosi-price-features">
-          <li>Mở khóa VĨNH VIỄN toàn bộ tính năng</li>
-          <li>Tất cả bản nâng cấp tương lai</li>
-          <li>Hỗ trợ setup phòng thu live chuyên nghiệp</li>
-          <li>Cấp lại Key trọn đời khi nâng cấp PC</li>
-          <li>Ưu tiên hỗ trợ kỹ thuật VIP 24/7</li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Mở khóa VĨNH VIỄN toàn bộ tính năng</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Tất cả bản nâng cấp tương lai</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Hỗ trợ setup phòng thu live chuyên nghiệp</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Cấp lại Key trọn đời khi nâng cấp PC</span></li>
+          <li><span class="hosi-chk">✓</span><span class="hosi-txt">Ưu tiên hỗ trợ kỹ thuật VIP 24/7</span></li>
         </ul>
       </div>
-      <a href="https://zalo.me/g/hosi_microdaw" target="_blank" class="hosi-btn-studio">SỞ HỮU TRỌN ĐỜI</a>
+      <a href="https://zalo.me/g/uvkmqjnxp5ncos07ov0y" target="_blank" class="hosi-btn-studio">SỞ HỮU TRỌN ĐỜI</a>
     </div>
   </div>
 
@@ -890,7 +906,7 @@
     </div>
 
     <div style="text-align: center; margin-top: 25px;">
-      <a href="https://zalo.me/g/hosi_microdaw" target="_blank" class="hosi-btn-studio" style="background:#f59e0b; color:#0f172a !important; font-weight:800; font-size:15px; padding:15px 30px;">🚀 ĐĂNG KÝ CỘNG TÁC VIÊN / ĐẠI LÝ NGAY</a>
+      <a href="https://zalo.me/g/uvkmqjnxp5ncos07ov0y" target="_blank" class="hosi-btn-studio" style="background:#f59e0b; color:#0f172a !important; font-weight:800; font-size:15px; padding:15px 30px;">🚀 THAM GIA NHÓM ZALO CTV / ĐẠI LÝ NGAY</a>
     </div>
   </div>
 
@@ -1072,7 +1088,7 @@
       <strong style="color: #ff1919; text-transform: uppercase;">🛠️ Dịch vụ Setup Âm Thanh Livestream &amp; Cài Vocal Chain Chuyên Nghiệp:</strong><br />
       • Cài đặt trọn bộ Plugin VST3 hay nhất (Auto-Tune, FabFilter, Reverb, Delay) qua UltraViewer / TeamViewer.<br />
       • Tinh chỉnh âm thanh chuẩn phòng thu theo từng chất giọng và micro của bạn.<br />
-      👉 <strong>Hotline / Zalo: 0908.107.000 (La Chí Nhân)</strong> • Website: <strong><a href="https://lachinhan.xyz" style="color: #ff1919; text-decoration: none;" target="_blank">lachinhan.xyz</a></strong>
+      👉 <strong>Hotline / Zalo: 0908.107.000 (La Chí Nhân)</strong> • Tham gia nhóm Zalo: <strong><a href="https://zalo.me/g/uvkmqjnxp5ncos07ov0y" style="color: #ff1919; text-decoration: none;" target="_blank">Nhóm Zalo Hỗ Trợ</a></strong> • Website: <strong><a href="https://lachinhan.xyz" style="color: #ff1919; text-decoration: none;" target="_blank">lachinhan.xyz</a></strong>
     </div>
   </div>
 
