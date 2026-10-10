@@ -11,7 +11,8 @@ installer/
 CMakeLists.txt
 KE_HOACH_*.md
 build_*.bat
-Push_To_GitHub.bat
+Push_*.bat
+Push_Cloud_Data.bat
 *.html
 
 # Build directories and outputs
