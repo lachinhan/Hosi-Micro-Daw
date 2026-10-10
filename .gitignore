@@ -8,7 +8,6 @@ plugins/
 third_party/
 tools/
 installer/
-.github/
 CMakeLists.txt
 KE_HOACH_*.md
 build_*.bat
