@@ -13,6 +13,8 @@ KE_HOACH_*.md
 build_*.bat
 Push_*.bat
 Push_Cloud_Data.bat
+Run_Keygen_CRM.*
+*.pyw
 *.html
 
 # Build directories and outputs
